@@ -10,10 +10,11 @@ logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logg
 log = logging.getLogger(__name__)
 bottle.debug(True)
 
-# Use users.json and roles.json in the local example_conf directory
-aaa = Cork('users', email_sender='federico.ceratto@gmail.com', smtp_url='smtp://smtp.magnet.ie')
-
+# Init bottle app
 app = bottle.app()
+
+# Use users.json and roles.json in the local users directory
+aaa = Cork('users')
 
 session_opts = {
     'session.cookie_expires': True,
@@ -23,11 +24,11 @@ session_opts = {
     'session.type': 'cookie',
     'session.validate_key': True,
     }
+
 app = SessionMiddleware(app, session_opts)
 
 def postd():
     return bottle.request.forms
-
 
 def post_get(name, default=''):
     return bottle.request.POST.get(name, default).strip()

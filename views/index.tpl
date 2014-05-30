@@ -37,7 +37,7 @@
     <div class="container">
         <nav class="blog-nav">
                 <a class="blog-nav-item active" href="/">Search</a>
-                <a class="blog-nav-item" href="/stats">Info</a>
+                <a class="blog-nav-item" href="/info">Info</a>
                 <a class="blog-nav-item" href="/logout">Logout</a>
                 %if view.is_admin == True:
                     <a class="blog-nav-item" href="/admin">Admin</a>
