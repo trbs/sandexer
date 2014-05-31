@@ -36,7 +36,8 @@
 <div class="blog-masthead">
     <div class="container">
         <nav class="blog-nav">
-                <a class="blog-nav-item active" href="/">Search</a>
+                <a class="blog-nav-item active" href="/">Home</a>
+                <a class="blog-nav-item" href="/search">Search</a>
                 <a class="blog-nav-item" href="/info">Info</a>
                 <a class="blog-nav-item" href="/logout">Logout</a>
                 %if view.is_admin == True:
@@ -62,36 +63,5 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 <!-- Include all compiled plugins (below), or include individual files as needed -->
 <script src="static/lib/bootstrap-3.1.1-dist/js/bootstrap.min.js"></script>
-
-<!--<script>-->
-    <!--$(document).ready(function(){-->
-        <!--function post(data) {-->
-            <!--$.ajax({-->
-                <!--type: 'POST',-->
-                <!--url: 'login_post',-->
-                <!--data: data,-->
-                <!--dataType: 'json',-->
-                <!--success: function(res){-->
-                    <!--process(res)-->
-                <!--},-->
-                <!--error:function(zemmel){-->
-
-                <!--}-->
-            <!--});-->
-        <!--}-->
-
-        <!--$('#login').click(function(){-->
-            <!--var user = $('#box_username').val();-->
-            <!--var pass = $('#box_password').val();-->
-
-            <!--if(!user||!pass){-->
-                <!--alert('What?');-->
-            <!--}-->
-            <!--else{-->
-
-            <!--}-->
-        <!--})-->
-    <!--});-->
-<!--</script>-->
 </body>
 </html>

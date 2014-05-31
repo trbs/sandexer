@@ -6,9 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FileFinder - Login Required!</title>
 
-    <!-- Javascript Core -->
-    <script src="static/lib/filefinder.js"></script>
-
     <!-- Bootstrap Core -->
     <link href="static/lib/bootstrap-3.1.1-dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -120,6 +117,7 @@
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 <!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="static/lib/filefinder.js"></script>
 <script src="static/lib/bootstrap-3.1.1-dist/js/bootstrap.min.js"></script>
 
 <script>

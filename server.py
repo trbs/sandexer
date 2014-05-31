@@ -59,6 +59,13 @@ def login_post():
     password = post_get('password')
     aaa.login(username, password, success_redirect='/', fail_redirect='/login')
 
+@bottle.route('/post', method='POST')
+def post():
+    aaa.require(fail_redirect='/login')
+    name = post_get('name')
+    a = bottle.request.POST
+    print name
+
 @bottle.route('/user_is_anonymous')
 def user_is_anonymous():
     if aaa.user_is_anonymous:
@@ -75,14 +82,19 @@ def show_current_user_role():
     return aaa.current_user.role
 
 @bottle.route('/admin')
-@bottle.view('admin_page')
+@bottle.view('admin')
 def admin():
     """Only admin users can see this"""
     aaa.require(role='admin', fail_redirect='/sorry_page')
+
+    view = Views.Options()
+    view.is_admin = bottle.request.environ.get('beaker.session')['username'] == 'admin'
+
     return dict(
         current_user=aaa.current_user,
         users=aaa.list_users(),
-        roles=aaa.list_roles()
+        roles=aaa.list_roles(),
+        view=view
     )
 
 @bottle.post('/create_user')
