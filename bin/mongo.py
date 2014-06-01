@@ -2,16 +2,17 @@ from gevent import monkey; monkey.patch_all()
 from datetime import datetime
 from pymongo import MongoClient
 from bin.error import Error
+from bin.utils import isInt
 
 class DiscoveredFile():
     def __init__(self, host_name, path, name, filetype, size=None, modified=None, perm=None):
         self.host_name = host_name
         self.filepath = path
         self.filename = name
-        self.filesize = size
+        self.filesize = int(size) if isInt(size) else size
         self.filetype = filetype
         self.filemodified = modified
-        self.fileperm = perm
+        self.fileperm = int(perm) if isInt(perm) else perm
 
 
 class MongoDb():
@@ -33,7 +34,7 @@ class MongoDb():
                      'filetype': df.filetype,
                      'filename': df.filename,
                      'host_name': df.host_name}
-            print df.filepath + df.filename
+
             if self.query('files', query).count() != 0:
                 continue
 

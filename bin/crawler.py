@@ -94,8 +94,6 @@ class Crawl():
 
                 size = spl[2]
                 perm = spl[3]
-                if isInt(size): size = int(size)
-                if isInt(perm): perm = int(perm)
 
                 data.append(DiscoveredFile(self.name, path, file, filetype, size, spl[1], perm))
 
@@ -171,7 +169,7 @@ class Crawl():
             soup = BeautifulSoup(opendir_html)
 
             if not 'Index of' in soup.title.text and rel == '':
-                return Error('Server \'\' doesnt seem to have a valid opendir' % self.name)
+                return Error('Server \'%s\' doesnt seem to have a valid opendir' % self.name)
             elif not 'Index of' in soup.title.text:
                 return
             elif rel == '':
