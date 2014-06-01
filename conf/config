@@ -1,0 +1,14 @@
+[General]
+recursive = 10
+
+[Protoindex]
+file_name = pycharm.gz
+file_max_size = 3
+
+[Crawler]
+default_ua = SanderexCrawl
+
+[Database]
+enabled = 1
+host = mongodb://localhost:27017
+name = search

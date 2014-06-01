@@ -156,9 +156,12 @@ def delete_user():
 def logout():
     aaa.logout(success_redirect='/login')
 
-from crawl import Crawl
-c = Crawl()
-c.http('http://192.168.178.30/files/', 'dont-care')
+import bin.config as config
+from bin.crawler import Crawl
+cfg = config.Config()
+cfg.reload()
+c = Crawl(cfg, 'hoi', 'http://192.168.178.30/files/')
+c.http()
 
 def main():
     run(app=app, host='192.168.178.30', quiet=False, reloader=False, server='gevent')
