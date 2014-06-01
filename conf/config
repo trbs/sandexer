@@ -2,8 +2,8 @@
 recursive = 10
 
 [Protoindex]
-file_name = pycharm.gz
-file_max_size = 3
+file_name = 00INDEX.gz
+file_max_size = 5
 
 [Crawler]
 default_ua = SanderexCrawl

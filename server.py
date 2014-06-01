@@ -161,7 +161,7 @@ from bin.crawler import Crawl
 cfg = config.Config()
 cfg.reload()
 c = Crawl(cfg, 'hoi', 'http://192.168.178.30/files/')
-c.http()
+print c.http()
 
 def main():
     run(app=app, host='192.168.178.30', quiet=False, reloader=False, server='gevent')

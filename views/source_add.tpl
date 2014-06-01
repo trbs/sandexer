@@ -65,16 +65,24 @@
     <table id="source" class="table table-bordered table-striped" style="clear: both">
         <tbody>
             <tr>
-                <td width="35%">Name</td>
+                <td width="35%">Name*</td>
                 <td width="65%"><a href="#" id="name" data-type="text" data-pk="1" data-req="yes" data-title="name"></a></td>
             </tr>
             <tr>
-                <td width="35%">Protocol</td>
+                <td width="35%">Protocol*</td>
                 <td width="65%"><a href="#" id="protocol" data-type="select" data-pk="1" data-req="yes" data-value="" data-title="Select protocol" class="editable editable-click" style=" background-color: rgba(0, 0, 0, 0);" data-original-title="" title=""></a></td>
             </tr>
             <tr>
-                <td width="35%">Location</td>
+                <td width="35%">Location*</td>
                 <td width="65%"><a href="#" id="url" data-type="text" data-req="yes" data-pk="1" data-title="Specifiy URL"></a></td>
+            </tr>
+            <tr>
+                <td width="35%">Username</td>
+                <td width="65%"><a href="#" id="username" data-type="text" data-pk="1" data-title="Specifiy Username"></a></td>
+            </tr>
+            <tr>
+                <td width="35%">Password</td>
+                <td width="65%"><a href="#" id="password" data-type="text" data-pk="1" data-title="Specifiy Password"></a></td>
             </tr>
         </tbody>
     </table>
@@ -84,12 +92,12 @@
     <table id="crawler" class="table table-bordered table-striped" style="clear: both">
         <tbody>
         <tr>
-            <td width="35%">Interval (minutes)</td>
-            <td width="65%"><a href="#" id="interval" data-type="text" data-req="yes" data-pk="1" data-title="Crawl Interval">10</a></td>
+            <td width="35%">Interval (minutes)*</td>
+            <td width="65%"><a href="#" id="interval" data-type="text" data-pk="1" data-title="Crawl Interval">10</a></td>
         </tr>
         <tr>
-            <td width="35%">User-Agent</td>
-            <td width="65%"><a href="#" id="useragent" data-type="text" data-req="yes" data-pk="1" data-title="User-Agent">Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0</a></td>
+            <td width="35%">User-Agent*</td>
+            <td width="65%"><a href="#" id="useragent" data-type="text" data-pk="1" data-title="User-Agent">Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0</a></td>
         </tr>
         </tbody>
     </table>
@@ -165,7 +173,7 @@
 <script>
     $.fn.editable.defaults.mode = 'inline';
     $(document).ready(function(){
-        $('#name, #url, #interval, #useragent').editable();
+        $('#name, #url, #interval, #useragent, #username, #password').editable();
         $('#protocol').editable({
             source: [
                 {value: 'HTTP', text: 'HTTP(s)'},
