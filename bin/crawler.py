@@ -92,10 +92,7 @@ class Crawl():
                         path = spl[4] if spl[4].endswith('/') else spl[4] + '/'
                     file = ''
 
-                size = spl[2]
-                perm = spl[3]
-
-                data.append(DiscoveredFile(self.name, path, file, filetype, size, spl[1], perm))
+                data.append(DiscoveredFile(self.name, path, file, filetype, spl[2], spl[1], spl[3]))
 
         except Exception as ex:
             return False # needs sane exception
