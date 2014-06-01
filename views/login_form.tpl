@@ -15,7 +15,7 @@
     <!-- Even more custom styles for this template -->
     <style>
         html,body{
-            height: 100%
+            height: 100%;
         }
         .form-control{
             border: 1px solid #A8A8A8;
@@ -25,61 +25,65 @@
             color: #8A8A8A;
             width: 80px;
         }
+        div.bg_container{
+            margin-top:0;
+            margin-bottom:0;
+            height: 100%;
+            width: 100%;
+            position:fixed;
+            top:48px;
+            background-color: #bcd3e6;
+        }
+        div.bg_lower_container{
+            position: fixed;
+            width:100%;
+            height:478px;
+            bottom:0;
+        }
+        div.bg_repeat{
+            background-image: url('/static/images/login_bg_repeat.png');
+            background-position: right center;
+            height: 478px;
+            width: auto;
+            overflow: hidden;
+        }
+        div.bg_leftcorner{
+            background-image: url('/static/images/login_bg_leftcorner.png');
+            width:792px;
+            height: 478px;
+            bottom:0;
+            right:0;
+            float:right;
+        }
     </style>
 </head>
 <body>
+
 <div class="blog-masthead">
     <div class="container">
         <nav class="blog-nav">
             %if login:
                 <meta http-equiv="refresh" content="0;URL='/loggedin'" />
             %else:
-<a class="blog-nav-item active" href="login">Login</a>
+                <a class="blog-nav-item active" href="login">Login</a>
             %end
         </nav>
     </div>
 </div>
 
-<div class="container">
-    %if ascii:
-    <pre style=font-size:8px;font-weight:bold;font-family:monospace;border:0px;>
-                                       ..
-                                     .(  )`-._
-                                   .'  ||     `._
-                                 .'    ||        `.
-                              .'       ||          `._
-                            .'        _||_            `-.
-                         .'          |====|              `..
-                       .'             \__/               (  )
-                     ( )               ||          _      ||
-                     /|\               ||       .-` \     ||
-                   .' | '              ||   _.-'    |     ||
-                  /   |\ \             || .'   `.__.'     ||   _.-..
-                .'   /| `.            _.-'   _.-'       _.-.`-'`._`.`
-                \  .' |  |        .-.`    `./      _.-`.    `._.-'
-                 |.   |  `.   _.-'   `.   .'     .'  `._.`---`
-                .'    |   |  :   `._..-'.'        `._..'  ||
-               /      |   \  `-._.'    ||                 ||
-              |     .'|`.  |           ||_.--.-._         ||
-              '    /  |  \ \       __.--'\    `. :        ||
-               \  .'  |   \|   ..-'   \   `._-._.'        ||
-`.._            |/    |    `.  \  \    `._.-              ||
-    `-.._       /     |      \  `-.'_.--'                 ||
-         `-.._.'      |      |        | |         _ _ _  _'_ _ _ _ _
-              `-.._   |      \        | |        |_|_|_'|_|_|_|_|_|_|
-                  [`--^-..._.'        | |       /....../|  __   __  |
-                   \`---.._|`--.._    | |      /....../ | |__| |__| |
-                    \__  _ `-.._| `-._|_|_ _ _/_ _ _ /  | |__| |__| |
-                     \   _o_   _`-._|_|_|_|_|_|_|_|_/   '-----------/
-                      \_`.|.'  _  - .--.--.--.--.--.`--------------'
-      .```-._ ``-.._   \__   _    _ '--'--'--'--'--'  - _ - _  __/
- .`-.```-._ ``-..__``.- `.      _     -  _  _  _ -    _-   _  __/(.``-._
- _.-` ``--..  ..    _.-` ``--..  .. .._ _. __ __ _ __ ..--.._ / .( _..``
-`.-._  `._  `- `-._  .`-.```-._ ``-..__``.-  -._--.__---._--..-._`...```
-   _.-` ``--..  ..  `.-._  `._  `- `-._ .-_. ._.- -._ --.._`` _.-`LGB`-.
-    </pre>
-    %end
+<div class="bg_container">
+    <div class="bg_lower_container">
+        <div class="bg_leftcorner">
 
+        </div>
+        <div class="bg_repeat">
+
+        </div>
+
+    </div>
+</div>
+
+<div class="container">
     <div class="row">
 
         <div class="col-sm-8 blog-main">
@@ -110,9 +114,6 @@
 
         </div>
     </div>
-        <div class="blog-footer" style="position: fixed;">
-            <p><a href="http://getbootstrap.com">FileFinder</a> v0.1 beta by <a href="https://github.com/skftn/">Sander 'dsc' Ferdinand</a>.</p>
-        </div>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>

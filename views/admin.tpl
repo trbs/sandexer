@@ -54,15 +54,26 @@
 <div class="container">
     <div style="height:20px;"></div>
 
-    <ol class="breadcrumb">
-        <li><a href="/admin">Admin</a></li>
-        <li><a href="/admin/sources">Sources</a></li>
-        <li class="active">Add a source</li>
-    </ol>
-
     <div id="errorbox"></div>
 
-    
+    <div class="list-group">
+        <a href="#" class="list-group-item">
+            <h4 class="list-group-item-heading">General</h4>
+            <p class="list-group-item-text">Turns dials, rotate knobs and such.</p>
+        </a>
+        <a href="/admin/sources" class="list-group-item">
+            <h4 class="list-group-item-heading">Sources</h4>
+            <p class="list-group-item-text">Add a remote source.</p>
+        </a>
+        <a href="/admin/access" class="list-group-item">
+            <h4 class="list-group-item-heading">Access control</h4>
+            <p class="list-group-item-text">Add, remove and ban users.</p>
+        </a>
+        <a href="/admin/debug" class="list-group-item">
+            <h4 class="list-group-item-heading">Debug</h4>
+            <p class="list-group-item-text">Debug shit.</p>
+        </a>
+    </div>
 
     <div class="blog-footer">
     <p><a href="http://getbootstrap.com">Sanderex</a> v0.1 beta by <a href="https://github.com/skftn/">Sander 'dsc' Ferdinand</a>.</p>

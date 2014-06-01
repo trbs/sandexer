@@ -7,10 +7,10 @@
     <title>Sanderex - Admin</title>
 
     <!-- Bootstrap Core -->
-    <link href="static/lib/bootstrap-3.1.1-dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/lib/bootstrap-3.1.1-dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Custom styles for this template -->
-    <link href="static/css/main.css" rel="stylesheet">
+    <link href="/static/css/main.css" rel="stylesheet">
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -44,9 +44,7 @@
                 <a class="blog-nav-item" href="/search">Search</a>
                 <a class="blog-nav-item" href="/info">Info</a>
                 <a class="blog-nav-item" href="/logout">Logout</a>
-                %if view.is_admin == True:
-                    <a class="blog-nav-item active" href="/admin">Admin</a>
-                %end
+                <a class="blog-nav-item active" href="/admin">Admin</a>
         </nav>
     </div>
 </div>
@@ -107,7 +105,7 @@
         </tbody>
     </table>
 
-    <a class="btn btn-large btn-default" href="admin/sources/">Cancel</a>
+    <a class="btn btn-large btn-default" href="/admin/sources">Cancel</a>
     <a id="submit_form" class="btn btn-large btn-default">Submit</a>
     <a id="btn_help" class="btn btn-large btn-default" style="float:right;">Help</a>
     <div style="height:50px;"></div>
@@ -147,22 +145,22 @@
     </div>
 
     <div class="blog-footer">
-    <p><a href="http://getbootstrap.com">FileFinder</a> v0.1 beta by <a href="https://github.com/skftn/">Sander 'dsc' Ferdinand</a>.</p>
+    <p><a href="http://getbootstrap.com">Sanderex</a> v0.1 beta by <a href="https://github.com/skftn/">Sander 'dsc' Ferdinand</a>.</p>
     </div>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 <!-- Include all compiled plugins (below), or include individual files as needed -->
-<script src="static/lib/bootstrap-3.1.1-dist/js/bootstrap.min.js"></script>
+<script src="/static/lib/bootstrap-3.1.1-dist/js/bootstrap.min.js"></script>
 
 <!--<script src="static/lib/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>-->
 <!--<link href="static/lib/jquery-ui-1.10.4.custom/css/ui-darkness/jquery-ui-1.10.4.custom.min.css" rel="stylesheet">-->
-<link rel="stylesheet" href="static/lib/jquery-ui-1.10.4.custom/css/flick//jquery-ui-1.10.4.custom.min.css" />
+<link rel="stylesheet" href="/static/lib/jquery-ui-1.10.4.custom/css/flick/jquery-ui-1.10.4.custom.min.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
 
-<link href="static/lib/jqueryui-editable/css/jqueryui-editable.css" rel="stylesheet">
-<script src="static/lib/jqueryui-editable/js/jqueryui-editable.js"></script>
-<script src="static/lib/filefinder.js"></script>
+<link href="/static/lib/jqueryui-editable/css/jqueryui-editable.css" rel="stylesheet">
+<script src="/static/lib/jqueryui-editable/js/jqueryui-editable.js"></script>
+<script src="/static/lib/filefinder.js"></script>
 
 <script>
     $.fn.editable.defaults.mode = 'inline';

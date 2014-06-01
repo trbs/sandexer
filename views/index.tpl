@@ -56,7 +56,7 @@
     %end
 
     <div class="blog-footer" style="position: fixed;">
-        <p><a href="http://getbootstrap.com">FileFinder</a> v0.1 beta by <a href="https://github.com/skftn/">Sander 'dsc' Ferdinand</a>.</p>
+        <p><a href="http://getbootstrap.com">Sanderex</a> v0.1 beta by <a href="https://github.com/skftn/">Sander 'dsc' Ferdinand</a>.</p>
     </div>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->

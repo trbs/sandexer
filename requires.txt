@@ -1,0 +1,6 @@
+pip install bottle
+pip install bottle-cork
+pip install gevent
+pip install requests
+apt-get install mongodb
+pip install pymongo

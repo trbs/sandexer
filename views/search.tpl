@@ -50,7 +50,7 @@
 <div class="container">
     <div style="height:20px;"></div>
 
-
+    search
 
     <div class="blog-footer" style="position: fixed;">
         <p><a href="http://getbootstrap.com">FileFinder</a> v0.1 beta by <a href="https://github.com/skftn/">Sander 'dsc' Ferdinand</a>.</p>
