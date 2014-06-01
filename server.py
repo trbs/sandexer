@@ -164,7 +164,7 @@ cfg.reload()
 db = MongoDb(cfg)
 
 c = Crawl(cfg, db, 'hoi', 'http://192.168.178.30/files/')
-print c.http().message
+print c.http()
 
 
 def main():
