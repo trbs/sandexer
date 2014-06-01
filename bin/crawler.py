@@ -1,24 +1,23 @@
 '''
 Crawwwwwlinnn in myyyyy skinnnnnnnn
 '''
-import requests
+from gevent import monkey; monkey.patch_all()
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
-import urllib
-import gzip
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
 import zlib
-import StringIO
-import bin.utils as utils
 from bin.error import Error
-import logging
 
 
 class Crawl():
-    def __init__(self, cfg, db, name, url, auth=None, auth_type=None, ua=None, interval=None):
+    def __init__(self, cfg, db, name, url, auth=None, auth_type=None, ua=None, ssl_verify=False, interval=None):
         self._cfg = cfg
         self._db = db
         self.name = name
         self.crawl_url = url
-        self.crawl_ua = ua
+        self.crawl_ua = ua if ua else self._cfg.get('Crawler', 'default_ua')
+        self.crawl_sslverify = ssl_verify
         self.crawl_auth = auth
         self.crawl_auth_type = HTTPBasicAuth if auth_type == 'basic' else HTTPDigestAuth
         self.crawl_interval = interval
@@ -27,68 +26,165 @@ class Crawl():
 #        self.pi_name = cfg.get('Protoindex', 'file_name')
 
     def http(self):
-        ua = self.crawl_ua if self.crawl_ua else self._cfg.get('Crawler', 'default_ua')
-
         try:
-            page_root = requests.get(self.crawl_url, verify=False, headers={'User-Agent': ua})
-            if not page_root.status_code == 200:
+            url_head = requests.head(self.crawl_url,
+                verify=self.crawl_sslverify,
+                headers={'User-Agent': self.crawl_ua})
+
+            if not url_head.status_code == 200:
                 # Website not found
                 return
             else:
-                protoindexer = self.fetch_protoindex(self.crawl_url, ua)
+                # try fetching protoindexer
+                protoindexer = self.fetch_protoindex(self.crawl_url, self.crawl_ua)
 
                 if isinstance(protoindexer, Error):
-                    return protoindexer
-
-                if self.verify_protoindex(protoindexer):
-                    self.parse_protoindex(protoindexer)
-
+                    pass
                 else:
-                    # try for webdav instead
-                    return
+                    verify = self.verify_protoindex(protoindexer)
+
+                    # if verifying fails it'll fall back to opendir scan
+                    if not isinstance(verify, Error):
+                        parsed = self.parse_protoindex(protoindexer)
+
+                        if not isinstance(parsed, Error):
+                            return True
+
+                # try an opendir instead
+                self.parse_opendir()
+                return
+
         except Exception as ex:
-            e = Error(ex)
-            return e
+            return Error(ex)
+
+    def parse_opendir(self):
+        data = [['/', '', '', True]] # [path,modified,size] per element in data
+        dirs = ['']
+
+        def parse(opendir_html, rel=''):
+            soup = BeautifulSoup(opendir_html)
+
+            if not 'Index of' in soup.title.text:
+                return False
+
+            for t in soup.findAll('tr'):
+                path = ''
+                modified = ''
+                size = ''
+                dir = False
+
+                for td in t.findAll('td'):
+                    for img in td.findAll('img'):
+                        if 'alt' in img.attrs:
+                            if img.attrs['alt'] == '[DIR]':
+                                dir = True
+
+                    for a in td.findAll('a'):
+                        if not a.text == 'Parent Directory':
+                            if 'href' in a.attrs:
+                                path = a.attrs['href']
+                            break
+
+                    if 'align' in td.attrs:
+                        if td.attrs['align'] == 'right' and not 'Parent Directory' in t.text:
+                            if not modified:
+                                modified = td.text.replace(' ', '')
+                            elif not size:
+                                size = td.text.replace(' ', '')
+                                if size == '-':
+                                    size = ''
+
+                if path:
+                    data.append([rel+path, modified, size, dir])
+                    if dir: dirs.append(rel+path)
+
+        while dirs:
+            try:
+                url = self.crawl_url + dirs[0]
+                response = requests.get(url,
+                    verify=self.crawl_sslverify,
+                    headers={'User-Agent': self.crawl_ua})
+
+                if not response.status_code == 200:
+                    raise requests.ConnectionError
+                else:
+                    parse(response.content, dirs[0])
+                    dirs.pop(0)
+
+            except Exception as ex:
+                return Error(str(ex)) # change to something more sane
+
+        return data
 
     def parse_protoindex(self, protoindex):
         pi = protoindex.split('\n')
         data = []
+
         for line in pi[1:-2]:
-            if not line.startswith("f") or line.startswith("d"):
+            if not line.startswith("f") and not line.startswith("d"):
                 continue
 
             spl = line.split(' ')
-            file_spl = spl[4].split('/')
-            file = file_spl[-1]
-            path = '/'.join(file_spl[:-1])
-            if not path.endswith('/'): path += '/'
+            filetype = line[:1]
+
+            if filetype == 'f':
+                file_spl = spl[4].split('/')
+                file = file_spl[-1]
+                path = '/'.join(file_spl[:-1])
+                if not path.endswith('/'): path += '/'
+            else:
+                path = spl[4] if spl[4].endswith('/') else spl[4] + '/'
+                file = ''
+
+            # check if it is already in the database
+            query = {'filepath': path,
+                     'filetype': filetype,
+                     'filename': file,
+                     'host_url': self.crawl_url}
+
+            if self._db.query('files', query).count() != 0:
+                continue
 
             insertdata = {
                 'host_url': self.crawl_url,
-                'filetype': line[:1],
+                'host_name': self.name,
+                'filetype': filetype,
                 'filesize': spl[2],
-                'filepath': urllib.quote_plus(path),
-                'filename': urllib.quote_plus(file),
+                'filepath': path,
+                'date_added': datetime.now(),
+                'filename': file,
                 'filedate': spl[1],
                 'filename_clean': '',
                 'section': '',
                 'imdb': ''
             }
 
-            #self.
+            try:
+                self._db.db.files.insert(insertdata)
+            except Exception as ex:
+                return Error(str(ex))
 
     def fetch_protoindex(self, url, ua):
         # download the file in blocks
         read_block_size = 1024*8
 
         # set up a stream to the file
+        headers={'User-Agent': self.crawl_ua, 'Accept-encoding': 'gzip,deflate'}
         page_indexer = requests.get(url + self._cfg.get('Protoindex', 'file_name'),
-            stream=True, verify=False, headers={'User-Agent': ua, 'Accept-encoding': 'gzip,deflate'})
+            stream=True,
+            verify=self.crawl_sslverify,
+            headers=headers)
 
         if not page_indexer.status_code == 200:
-            return False
+            return Error('Server \'%s\' returned status code %s' % (self.name, str(page_indexer.status_code)))
         else:
             protoindex_max_size = self._cfg.get('Protoindex', 'file_max_size') * 1048576
+
+            # check server header for the correct file
+            if page_indexer.headers.get('content-type'):
+                content_type = page_indexer.headers.get('content-type')
+                if not content_type == 'application/x-gzip':
+                    return Error('\'%s\' returned wrong content-type for file \'%s\' (%s).' % (self.name, self._cfg.get('Protoindex', 'file_name'), content_type))
 
             # check server header content-length to determine how big the index file is
             if page_indexer.headers.get('content-length'):
@@ -118,13 +214,12 @@ class Crawl():
                 if not data: break
 
                 # decompress and append
-                data = d.decompress(data)
-                protoindex += data
+                protoindex += d.decompress(data)
 
             return protoindex
 
     def verify_protoindex(self, protoindex):
-        if not protoindex.startswith('# proto-index v=') or not protoindex.endswith('# end proto-index'):
+        if not protoindex.startswith('# proto-index v=') or not protoindex.endswith('# end proto-index\n'):
             e = Error('Could not verify index for \'%s\'' % self.name)
             return e
         return True

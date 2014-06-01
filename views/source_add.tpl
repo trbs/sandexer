@@ -84,6 +84,10 @@
                 <td width="35%">Password</td>
                 <td width="65%"><a href="#" id="password" data-type="text" data-pk="1" data-title="Specifiy Password"></a></td>
             </tr>
+            <tr>
+                <td width="35%">Auth type</td>
+                <td width="65%"><a href="#" id="auth_type" data-type="select" data-pk="1" data-value="" data-title="Auth Type" class="editable editable-click" style=" background-color: rgba(0, 0, 0, 0);" data-original-title="" title=""></a></td>
+            </tr>
         </tbody>
     </table>
 
@@ -99,6 +103,10 @@
             <td width="35%">User-Agent*</td>
             <td width="65%"><a href="#" id="useragent" data-type="text" data-pk="1" data-title="User-Agent">Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0</a></td>
         </tr>
+        <tr>
+            <td width="35%">Check SSL certificate*</td>
+            <td width="65%"><a href="#" id="verify_ssl" data-type="select" data-pk="1" data-value="" data-req="yes" data-title="Auth Type" class="editable editable-click" style=" background-color: rgba(0, 0, 0, 0);" data-original-title="" title="">No</a></td>
+        </tr>
         </tbody>
     </table>
 
@@ -108,7 +116,7 @@
         <tbody>
         <tr>
             <td width="35%">Include</td>
-            <td width="65%"><a href="#" id="fileinclude_custom" data-req="yes" data-type="checklist" data-value="1,2,3,4,5" data-title="Select files" class="editable editable-click">Documents<br>Files<br>Movies<br>Music<br>Pictures</a></td>
+            <td width="65%"><a href="#" id="fileincludes" data-req="yes" data-type="checklist" data-value="1,2,3,4,5" data-title="Select files" class="editable editable-click">Documents<br>Files<br>Movies<br>Music<br>Pictures</a></td>
         </tr>
         </tbody>
     </table>
@@ -174,6 +182,7 @@
     $.fn.editable.defaults.mode = 'inline';
     $(document).ready(function(){
         $('#name, #url, #interval, #useragent, #username, #password').editable();
+
         $('#protocol').editable({
             source: [
                 {value: 'HTTP', text: 'HTTP(s)'},
@@ -182,7 +191,23 @@
 
         });
 
-        $('#fileinclude_custom').editable({
+        $('#auth_type').editable({
+            source: [
+                {value: 'HTTPBASIC', text: 'HTTP(s) Basic'},
+                {value: 'HTTPDIGEST', text: 'HTTP(s) Digest'}
+            ]
+
+        });
+
+        $('#verify_ssl').editable({
+            source: [
+                {value: 'TRUE', text: 'Yes'},
+                {value: 'FALSE', text: 'No'}
+            ]
+
+        });
+
+        $('#fileincludes').editable({
             pk: 1,
             limit: 5,
             source: [
@@ -192,14 +217,6 @@
                 {value: 4, text: 'Music'},
                 {value: 5, text: 'Pictures'}
             ]
-        });
-
-        $('#fileinclude').editable({
-            source: [
-                {value: 'ALL', text: 'Everything'},
-                {value: 'CUSTOM', text: 'Custom'}
-            ]
-
         });
 
         $('#submit_form').click(function(){

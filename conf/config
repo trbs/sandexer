@@ -10,5 +10,5 @@ default_ua = SanderexCrawl
 
 [Database]
 enabled = 1
-host = mongodb://localhost:27017
+source = mongodb://localhost:27017/
 name = search

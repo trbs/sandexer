@@ -158,10 +158,14 @@ def logout():
 
 import bin.config as config
 from bin.crawler import Crawl
+from bin.mongo import MongoDb
 cfg = config.Config()
 cfg.reload()
-c = Crawl(cfg, 'hoi', 'http://192.168.178.30/files/')
-print c.http()
+db = MongoDb(cfg)
+
+c = Crawl(cfg, db, 'hoi', 'http://192.168.178.30/files/')
+print c.http().message
+
 
 def main():
     run(app=app, host='192.168.178.30', quiet=False, reloader=False, server='gevent')
