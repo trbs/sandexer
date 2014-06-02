@@ -165,10 +165,19 @@ cfg = config.Config()
 cfg.reload()
 db = MongoDb(cfg)
 
-url = ParseUrl('http://wipkip.nikhef.nl/events/')
+import bin.test
 
+url = ParseUrl('http://wipkip.nikhef.nl/events/CONFidence/')
+
+from datetime import datetime
+start = datetime.now()
+print 'go'
 c = WebCrawl(cfg, db, 'WipKip', url, ua='Sanderex Webcrawl')
-c.http()
+aa = c.http()
+'Added: ' + aa
+end = datetime.now()
+print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
+
 #c = FtpCrawl(cfg, db, 'hoi', '192.168.178.30', 'ftpuser', 'sda')
 #c.ftp()
 

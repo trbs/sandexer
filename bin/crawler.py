@@ -5,6 +5,8 @@ from gevent import monkey; monkey.patch_all()
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 import requests
 import ftplib
+from random import randrange
+from time import sleep
 from datetime import datetime
 from bs4 import BeautifulSoup
 import zlib
@@ -185,13 +187,15 @@ class WebCrawl():
         return True
 
     def walk_opendir(self):
-        import time
-        time.sleep(float(0.5))
         discovered_files = []
         dirs = ['']
 
         while dirs:
+            # cut the source some slack
+            sleep(float(0.2))
+
             try:
+                # fetch opendir
                 response = self.request(
                     url=self.crawl_url.reluri + dirs[0],
                     request_method=requests.get,
@@ -202,12 +206,14 @@ class WebCrawl():
                     dirs.pop(0)
                     continue
 
+                # try reading it
                 parsed = self.parse_opendir(response, discovered_files, dirs, dirs[0])
 
                 if isinstance(parsed, Debug):
                     dirs.pop(0)
                     continue
 
+                # if anything came back, yay
                 discovered_files = parsed[0]
                 dirs = parsed[1]
 
@@ -216,52 +222,93 @@ class WebCrawl():
             except Exception as ex:
                 return Debug(str(ex))
 
-        print len(discovered_files)
+        print 'Discovered: ' + str(len(discovered_files))
         return discovered_files
 
-    def parse_opendir(self, response, discovered_files, dirs, rel=''):
-        # i do not expect you to understand the following code
-
-        opendir_html = response.content
-        soup = BeautifulSoup(opendir_html)
-
+    def verify_opendir(self, soup, response):
         if not soup.title.text.startswith('Index of') and not soup.title.text.startswith(self.crawl_url.base + ':/'):
             return Debug('Source \'%s\' - Invalid opendir (\'%s\')' % (self.name, response.url))
 
-        if not '<h1>Index of' in response.content:
+        elif not '<h1>Index of' in response.content:
             return Debug('Source \'%s\' - Invalid opendir (\'%s\')' % (self.name, response.url))
+
+        return True
+
+    def parse_opendir(self, response, discovered_files, dirs, rel=''):
+        opendir_html = response.content
+
+        # if the opendir contains a lot of files, divide the html in chunks so beautifulsoup parses faster
+        # unncesary for fast machines but optimization is always nice (think raspberry pi)
+        page_size = len(opendir_html)
+        chunks = []
+        chunk_size = 15000 # in characters
+
+        if page_size > chunk_size:
+            head = opendir_html[:chunk_size]
+            soup = BeautifulSoup(head)
+            verify = self.verify_opendir(soup, response)
+
+            if isinstance(verify, Debug):
+                return verify
+
+            spl = opendir_html.split('<img')
+
+            avg = len(spl[randrange(1,len(spl))]) + 15
+            chunk_div = chunk_size / avg
+
+            chunks = [''.join(spl[x:x + chunk_div]) for x in xrange(0, len(spl), chunk_div)]
+        else:
+            soup = BeautifulSoup(opendir_html)
+            verify = self.verify_opendir(soup, response)
+
+            if isinstance(verify, Debug):
+                return verify
+
+            chunks = [opendir_html]
 
         if rel == '':
             discovered_files.append(DiscoveredFile(self.name, '', '', 'd'))
 
-        for t in soup.findAll('a'):
-            if 'href' in t.attrs:
-                if not '?C=' in t.attrs['href'] and not 'parent directory' in t.text.lower():
+        for chunk in chunks:
+            soup = BeautifulSoup(chunk)
+
+            # do not try to understand the following
+            try:
+                for t in soup.findAll('a', href=True):
                     filename = t.attrs['href']
-                    isdir = True if filename.endswith('/') else False
-                    modified = None
-                    size = None
 
-                    a = t.parent
-                    b = t.parent.text
-                    c = b[:b.find('\n')].split(' ')
+                    if not '?C=' in filename and not 'parent directory' in t.text.lower():
+                        if filename.startswith('./'):
+                            filename = filename[2:]
 
-                    if a.text.endswith('</li>'):
-                        pass
-                    elif len(c) > 1:
-                        a = t.parent.text
-                        a = a[:a.find('\n')]
-                        spl = [z for z in a.split(' ') if z]
-                    else:
-                        a = a.parent.text[len(filename):]
-                        spl = [filename] + [z for z in a.split(' ') if z]
+                        isdir = True if filename.endswith('/') else False
+                        modified = None
+                        size = None
 
-                    if spl[0] == filename and len(spl) > 1:
-                        modified = '%s %s' % (spl[1], spl[2])
-                        size = None if spl[3] == '-' else spl[3].replace(' ', '')
+                        a = t.parent
+                        b = t.parent.text
+                        c = b[:b.find('\n')].split(' ')
 
-                    discovered_files.append(DiscoveredFile(self.name, rel, filename, 'd' if isdir else 'f', size, modified, None))
-                    if isdir: dirs.append(rel+filename)
+                        if a.text.endswith('</li>'):
+                            pass
+                        elif len(c) > 1:
+                            a = t.parent.text
+                            a = a[:a.find('\n')]
+                            spl = [z for z in a.split(' ') if z]
+                        else:
+                            a = a.parent.text[len(filename):]
+                            spl = [filename] + [z for z in a.split(' ') if z]
+
+                        if spl[0] == filename and len(spl) > 1:
+                            modified = '%s %s' % (spl[1], spl[2])
+                            size = None if spl[3] == '-' else spl[3].replace(' ', '')
+
+                        discovered_files.append(DiscoveredFile(self.name, rel, filename, 'd' if isdir else 'f', size, modified, None))
+
+                        if isdir: dirs.append(rel+filename)
+
+            except Exception as ex:
+                print ex # needs sane exception handling
 
         return [discovered_files, dirs]
 
@@ -305,4 +352,4 @@ class WebCrawl():
         except requests.ConnectionError:
             return Debug('Source \'%s\' - Connection error while fetching \'%s\'. Is the server up?' % (self.name, url))
         except Exception as ex:
-            return Debug('Source \'%s\' - Undefined error while fetching \'%s\'.' % (self.name, url))
+            return Debug('Source \'%s\' - Undefined error while fetching \'%s\': %s' % (self.name, url, str(ex)))

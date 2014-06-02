@@ -25,7 +25,7 @@ class MongoDb():
 
     def try_add_files(self, discovered_files):
         inserts = 0
-
+        start = datetime.now()
         for df in discovered_files:
 
             # check if it is already in the database
@@ -54,6 +54,10 @@ class MongoDb():
                 self.db.files.insert(insertdata)
                 inserts += 1
             except Exception as ex:
-                return Error(str(ex))
+                return Debug(str(ex))
+
+        end = datetime.now()
+
+        print 'INSERTS: ' + str((end - start).total_seconds()) + ' seconds'
 
         return inserts
