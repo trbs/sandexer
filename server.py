@@ -157,13 +157,13 @@ def logout():
     aaa.logout(success_redirect='/login')
 
 import bin.config as config
-from bin.crawler import Crawl
+from bin.crawler import WebCrawl
 from bin.mongo import MongoDb
 cfg = config.Config()
 cfg.reload()
 db = MongoDb(cfg)
 
-c = Crawl(cfg, db, 'hoi', 'http://192.168.178.30/files/')
+c = WebCrawl(cfg, db, 'hoi', 'http://192.168.178.30/files/')
 print c.http()
 
 

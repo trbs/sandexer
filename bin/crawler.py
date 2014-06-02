@@ -14,24 +14,26 @@ from bin.error import Error
 # to-do:
 # support for http auth
 # clean up some exceptions
+# requests timeout
 # fix crawl's __init__
 
-class Crawl():
-    def __init__(self, cfg, db, name, url, auth=None, auth_type=None, ua=None, ssl_verify=False, interval=None):
+class WebCrawl():
+    def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None, auth_type=None, ua=None, ssl_verify=False, interval=None):
         self._cfg = cfg
         self._db = db
         self.name = name
         self.crawl_url = url
         self.crawl_ua = ua if ua else self._cfg.get('Crawler', 'default_ua')
         self.crawl_sslverify = ssl_verify
-        self.crawl_auth = auth
-        self.crawl_auth_type = HTTPBasicAuth if auth_type == 'basic' else HTTPDigestAuth
+        self.crawl_auth_type = HTTPBasicAuth if auth_type == 'BASIC' else HTTPDigestAuth
+        self.crawl_auth = None if not auth_type else self.crawl_auth_type(auth_username, auth_password)
         self.crawl_interval = interval
 
     def http(self):
         try:
             url_head = requests.head(self.crawl_url,
                 verify=self.crawl_sslverify,
+                auth=self.crawl_auth,
                 headers={'User-Agent': self.crawl_ua})
 
             if not url_head.status_code == 200:
@@ -107,6 +109,7 @@ class Crawl():
         headers={'User-Agent': self.crawl_ua, 'Accept-encoding': 'gzip,deflate'}
         page_indexer = requests.get(url + self._cfg.get('Protoindex', 'file_name'),
             stream=True,
+            auth=self.crawl_auth,
             verify=self.crawl_sslverify,
             headers=headers)
 
@@ -216,6 +219,7 @@ class Crawl():
                 url = self.crawl_url + dirs[0]
                 response = requests.get(url,
                     verify=self.crawl_sslverify,
+                    auth=self.crawl_auth,
                     headers={'User-Agent': self.crawl_ua})
 
                 if not response.status_code == 200:
