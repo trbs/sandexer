@@ -167,14 +167,18 @@ db = MongoDb(cfg)
 
 import bin.test
 
-url = ParseUrl('http://wipkip.nikhef.nl/events/CONFidence/')
+url = ParseUrl('http://wipkip.nikhef.nl/events/')
 
 from datetime import datetime
 start = datetime.now()
 print 'go'
-c = WebCrawl(cfg, db, 'WipKip', url, ua='Sanderex Webcrawl')
+c = WebCrawl(cfg, db, 'WipKip', url, ua='sandexer webcrawl - https://github.com/skftn/sandexer/')
 aa = c.http()
-'Added: ' + aa
+from bin.utils import Debug
+if isinstance(aa, Debug):
+    print aa.message
+else:
+    print 'Added: ' + str(aa)
 end = datetime.now()
 print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
 

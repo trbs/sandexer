@@ -5,6 +5,7 @@ from gevent import monkey; monkey.patch_all()
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 import requests
 import ftplib
+from humanbytes import human2bytes
 from random import randrange
 from time import sleep
 from datetime import datetime
@@ -20,7 +21,8 @@ from bin.utils import Debug
 # 1. 00INDEX.xz - https://docs.python.org/dev/library/lzma.html
 # 2. 00INDEX.gz - (done)
 # 3. 00SHARE
-# 4. opendir
+# 4. opendir (almost done)
+# 5. watch out for loops (symlinks)
 
 class FtpCrawl():
     def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None):
@@ -203,6 +205,8 @@ class WebCrawl():
                 )
 
                 if isinstance(response, Debug):
+                    if dirs[0] == '':
+                        return response
                     dirs.pop(0)
                     continue
 
@@ -210,6 +214,8 @@ class WebCrawl():
                 parsed = self.parse_opendir(response, discovered_files, dirs, dirs[0])
 
                 if isinstance(parsed, Debug):
+                    if dirs[0] == '':
+                        return Debug('Source \'%s\' - No opendir at (\'%s\')' % (self.name, self.crawl_url.reluri + dirs[0]))
                     dirs.pop(0)
                     continue
 
@@ -226,13 +232,13 @@ class WebCrawl():
         return discovered_files
 
     def verify_opendir(self, soup, response):
-        if not soup.title.text.startswith('Index of') and not soup.title.text.startswith(self.crawl_url.base + ':/'):
-            return Debug('Source \'%s\' - Invalid opendir (\'%s\')' % (self.name, response.url))
+        if soup.title:
+            if soup.title.text.startswith('Index of') or \
+               soup.title.text.startswith(self.crawl_url.base + ':/'):
+                if '<h1>Index of' in response.content:
+                    return True
 
-        elif not '<h1>Index of' in response.content:
-            return Debug('Source \'%s\' - Invalid opendir (\'%s\')' % (self.name, response.url))
-
-        return True
+        return Debug('Source \'%s\' - Invalid opendir (\'%s\')' % (self.name, response.url))
 
     def parse_opendir(self, response, discovered_files, dirs, rel=''):
         opendir_html = response.content
@@ -273,46 +279,50 @@ class WebCrawl():
             soup = BeautifulSoup(chunk)
 
             # do not try to understand the following
-            try:
-                for t in soup.findAll('a', href=True):
-                    filename = t.attrs['href']
+            for t in soup.findAll('a', href=True):
+                filename = t.attrs['href']
 
-                    if not '?C=' in filename and not 'parent directory' in t.text.lower():
-                        if filename.startswith('./'):
-                            filename = filename[2:]
+                if not '?C=' in filename and not 'parent directory' in t.text.lower():
+                    if filename.startswith('./'):
+                        filename = filename[2:]
 
-                        isdir = True if filename.endswith('/') else False
-                        modified = None
-                        size = None
+                    isdir = True if filename.endswith('/') else False
+                    modified = None
+                    size = None
 
-                        a = t.parent
-                        b = t.parent.text
-                        c = b[:b.find('\n')].split(' ')
+                    a = t.parent
+                    b = t.parent.text
+                    c = b[:b.find('\n')].split(' ')
 
-                        if a.text.endswith('</li>'):
-                            pass
-                        elif len(c) > 1:
-                            a = t.parent.text
-                            a = a[:a.find('\n')]
-                            spl = [z for z in a.split(' ') if z]
+                    if a.text.endswith('</li>'):
+                        pass
+                    elif len(c) > 1:
+                        a = t.parent.text
+                        a = a[:a.find('\n')]
+                        spl = [z for z in a.split(' ') if z]
+                    else:
+                        a = a.parent.text[len(filename):]
+                        spl = [filename] + [z for z in a.split(' ') if z]
+
+                    if spl[0] == filename and len(spl) > 1:
+                        modified = '%s %s' % (spl[1], spl[2])
+                        size = None if spl[3] == '-' else spl[3].replace(' ', '')
+                        if spl[3] == '-':
+                            size = None
                         else:
-                            a = a.parent.text[len(filename):]
-                            spl = [filename] + [z for z in a.split(' ') if z]
+                            size = spl[3].replace(' ', '')
+                            try:
+                                size = human2bytes(size)
+                            except:
+                                pass
 
-                        if spl[0] == filename and len(spl) > 1:
-                            modified = '%s %s' % (spl[1], spl[2])
-                            size = None if spl[3] == '-' else spl[3].replace(' ', '')
-
-                        discovered_files.append(DiscoveredFile(self.name, rel, filename, 'd' if isdir else 'f', size, modified, None))
-
-                        if isdir: dirs.append(rel+filename)
-
-            except Exception as ex:
-                print ex # needs sane exception handling
+                    discovered_files.append(DiscoveredFile(self.name, rel, filename, 'd' if isdir else 'f', size, modified, None))
+                    if isdir: dirs.append(rel+filename)
 
         return [discovered_files, dirs]
 
     def request(self, url, request_method, headers=None, stream=False, redirects=True):
+        print url
         try:
             response = request_method(
                 url,
@@ -345,7 +355,7 @@ class WebCrawl():
 
                 return Debug('Source \'%s\' - Invalid authentication for \'%s\'.' % (self.name, url))
             else:
-                return Debug('Source \'%s\' - Invalid status code \'%s\'. (%s)' % (self.name, str(response.status_code), url))
+                return Debug('Source \'%s\' - Invalid status code \'%s\'. (\'%s\')' % (self.name, str(response.status_code), url))
 
         except requests.exceptions.Timeout:
             return Debug('Source \'%s\' - Timeout error while fetching \'%s\'.' % (self.name, url))
