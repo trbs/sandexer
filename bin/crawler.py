@@ -28,48 +28,42 @@ class WebCrawl():
         self.crawl_interval = interval
 
     def http(self):
-        try:
-            url_head = requests.head(self.crawl_url,
-                verify=self.crawl_sslverify,
-                auth=self.crawl_auth,
-                headers={'User-Agent': self.crawl_ua})
+        response_head = self.request(
+            url=self.crawl_url,
+            request_method=requests.head)
 
-            if not url_head.status_code == 200:
-                # Website not found
-                return
+        if isinstance(response_head, Error):
+            # Website not found
+            return
+        else:
+            discovered_files = None
+
+            # try fetching protoindexer
+            protoindexer = self.fetch_protoindex(self.crawl_url)
+
+            if isinstance(protoindexer, Error):
+                pass
             else:
-                discovered_files = None
+                verify = self.verify_protoindex(protoindexer)
 
-                # try fetching protoindexer
-                protoindexer = self.fetch_protoindex(self.crawl_url, self.crawl_ua)
+                # if the indexer verification fails it'll fall back to opendir crawling
+                if not isinstance(verify, Error):
+                    discovered_files = self.parse_protoindex(protoindexer)
 
-                if isinstance(protoindexer, Error):
-                    pass
-                else:
-                    verify = self.verify_protoindex(protoindexer)
+            if not discovered_files:
+                # go for opendir
+                discovered_files = self.parse_opendir()
 
-                    # if the indexer verification fails it'll fall back to opendir crawling
-                    if not isinstance(verify, Error):
-                        discovered_files = self.parse_protoindex(protoindexer)
+            if isinstance(discovered_files, Error):
+                # if that also fails, quit trying
+                return discovered_files
 
-                if not discovered_files:
-                    # go for opendir
-                    discovered_files = self.parse_opendir()
-
-                if isinstance(discovered_files, Error):
-                    # if that also fails, quit trying
-                    return discovered_files
-
-                if len(discovered_files) == 0:
-                    return 0
-                else:
-                    return self._db.try_add_files(discovered_files)
-
-        except Exception as ex:
-            return Error(ex)
+            if len(discovered_files) == 0:
+                return 0
+            else:
+                return self._db.try_add_files(discovered_files)
 
     def parse_protoindex(self, protoindex):
-        # needs try catch block
         pi = protoindex.split('\n')
         data = []
 
@@ -95,55 +89,52 @@ class WebCrawl():
                 data.append(DiscoveredFile(self.name, path, file, filetype, spl[2], spl[1], spl[3]))
 
         except Exception as ex:
-            return False # needs sane exception
+            return Error(str(ex))
 
         return data
 
-    def fetch_protoindex(self, url, ua):
-        # download the file in blocks
-        read_block_size = 1024*8
+    def fetch_protoindex(self, url):
+        try:
+            # download the file in blocks
+            read_block_size = 1024*8
 
-        # set up a stream to the file
-        headers={'User-Agent': self.crawl_ua, 'Accept-encoding': 'gzip,deflate'}
-        page_indexer = requests.get(url + self._cfg.get('Protoindex', 'file_name'),
-            stream=True,
-            auth=self.crawl_auth,
-            verify=self.crawl_sslverify,
-            headers=headers)
+            # set up a stream to the file
+            response_indexer = self.request(
+                url=url + self._cfg.get('Protoindex', 'file_name'),
+                request_method=requests.get,
+                headers={'User-Agent': self.crawl_ua,
+                         'Accept-encoding': 'gzip,deflate'},
+                stream=True)
 
-        if not page_indexer.status_code == 200:
-            return Error('Server \'%s\' returned status code %s' % (self.name, str(page_indexer.status_code)))
-        else:
+            if isinstance(response_indexer, Error):
+                return response_indexer
+
             protoindex_max_size = self._cfg.get('Protoindex', 'file_max_size') * 1048576
 
             # verify server header content-type
-            if page_indexer.headers.get('content-type'):
-                content_type = page_indexer.headers.get('content-type')
+            if response_indexer.headers.get('content-type'):
+                content_type = response_indexer.headers.get('content-type')
+
                 if not content_type == 'application/x-gzip':
-                    return Error('\'%s\' returned wrong content-type for file \'%s\' (%s).' % (self.name, self._cfg.get('Protoindex', 'file_name'), content_type))
+                    return Error('Source \'%s\' - Invalid content-type for file \'%s\' (%s).' % (self.name, self._cfg.get('Protoindex', 'file_name'), content_type))
 
             # check server header content-length to determine how big the file is
-            if page_indexer.headers.get('content-length'):
-                try:
-                    protoindex_size = int(page_indexer.headers['content-length'])
+            if response_indexer.headers.get('content-length'):
+                protoindex_size = int(response_indexer.headers['content-length'])
 
-                    if protoindex_size > protoindex_max_size:
-                        e = Error('Server \'%s\' indexer exceeded max file size \'%s\' (%s). Falling back to parsing webdav.' % (self.name, str(protoindex_max_size), str(protoindex_size)))
-                        return e
-                except Exception as ex:
-                    return Error(str(ex))
+                if protoindex_size > protoindex_max_size:
+                    return Error('Source \'%s\' - Indexer exceeded max file size \'%s\' (%s). Falling back to parsing webdav.' % (self.name, str(protoindex_max_size), str(protoindex_size)))
 
             d = zlib.decompressobj(16+zlib.MAX_WBITS) #this magic number can be inferred from the structure of a gzip file
             protoindex = ''
 
             while True:
                 # read a block
-                data = page_indexer.raw.read(read_block_size)
+                data = response_indexer.raw.read(read_block_size)
 
                 # terminate if it went over the max file size
                 if len(protoindex) > protoindex_max_size:
-                    e = Error('Server \'%s\' indexer exceeded max file size \'%s\' (%s). Falling back to parsing webdav.' % (self.name, str(protoindex_max_size), str(len(protoindex))))
-                    return e
+                    return Error('Source \'%s\' - Indexer exceeded max file size \'%s\' (%s). Falling back to parsing webdav.' % (self.name, str(protoindex_max_size), str(len(protoindex))))
 
                 # break if end of download
                 if not data: break
@@ -153,9 +144,12 @@ class WebCrawl():
 
             return protoindex
 
+        except Exception as ex: # gotta catch 'm all
+            return Error(str(ex))
+
     def verify_protoindex(self, protoindex):
         if not protoindex.startswith('# proto-index v=') or not protoindex.endswith('# end proto-index\n'):
-            return Error('Could not verify index for \'%s\'' % self.name)
+            return Error('Source \'%s\' - Could not verify index' % self.name)
 
         return True
 
@@ -167,7 +161,7 @@ class WebCrawl():
             soup = BeautifulSoup(opendir_html)
 
             if not 'Index of' in soup.title.text and rel == '':
-                return Error('Server \'%s\' doesnt seem to have a valid opendir' % self.name)
+                return Error('Source \'%s\' - No valid opendir' % self.name)
             elif not 'Index of' in soup.title.text:
                 return
             elif rel == '':
@@ -214,14 +208,13 @@ class WebCrawl():
 
         while dirs:
             try:
-                url = self.crawl_url + dirs[0]
-                response = requests.get(url,
-                    verify=self.crawl_sslverify,
-                    auth=self.crawl_auth,
-                    headers={'User-Agent': self.crawl_ua})
+                response = self.request(
+                    url=self.crawl_url + dirs[0],
+                    request_method=requests.get
+                )
 
-                if not response.status_code == 200:
-                    raise requests.ConnectionError
+                if isinstance(response, Error):
+                    return response
 
                 parsed = parse(response.content, dirs[0])
 
@@ -231,6 +224,28 @@ class WebCrawl():
                 dirs.pop(0)
 
             except Exception as ex:
-                return Error(str(ex)) # change to something more sane
+                return Error(str(ex))
 
         return data
+
+    def request(self, url, request_method, headers=None, stream=False):
+        try:
+            response = request_method(
+                url,
+                stream=stream,
+                auth=self.crawl_auth,
+                verify=self.crawl_sslverify,
+                headers=headers if headers else {'User-Agent': self.crawl_ua},
+                timeout=self._cfg.get('Crawler', 'timeout'))
+
+            if response.status_code == 200:
+                return response
+            else:
+                return Error('Source \'%s\' - Invalid status code %s' % (self.name, str(response.status_code)))
+
+        except requests.exceptions.Timeout:
+            return Error('Source \'%s\' - Timeout error fetching \'%s\'' % (self.name, url))
+        except requests.ConnectionError:
+            return Error('Source \'%s\' - Connection error fetching \'%s\'' % (self.name, url))
+        except Exception as ex:
+            return Error('Source \'%s\' - Undefined error fetching \'%s\'' % (self.name, url))
