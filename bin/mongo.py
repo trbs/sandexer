@@ -1,8 +1,7 @@
 from gevent import monkey; monkey.patch_all()
 from datetime import datetime
 from pymongo import MongoClient
-from bin.error import Error
-from bin.utils import isInt
+from bin.utils import isInt, Debug
 
 class DiscoveredFile():
     def __init__(self, host_name, path, name, filetype, size=None, modified=None, perm=None):

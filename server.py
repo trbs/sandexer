@@ -9,8 +9,8 @@ import logging
 
 import views.views as Views
 
-logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.DEBUG)
-log = logging.getLogger(__name__)
+#logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.DEBUG)
+#log = logging.getLogger(__name__)
 debug(True)
 
 # Init bottle app
@@ -157,15 +157,20 @@ def logout():
     aaa.logout(success_redirect='/login')
 
 import bin.config as config
-from bin.crawler import WebCrawl
+from bin.crawler import WebCrawl, FtpCrawl
+from bin.urlparse import ParseUrl
 from bin.mongo import MongoDb
+
 cfg = config.Config()
 cfg.reload()
 db = MongoDb(cfg)
 
-c = WebCrawl(cfg, db, 'hoi', 'http://192.168.178.30/files/', ua='jemoeder', auth_username='admin', auth_password='admin1243',auth_type='BASIC')
-c.http()
+url = ParseUrl('http://wipkip.nikhef.nl/events/CONFidence/')
 
+c = WebCrawl(cfg, db, 'hoi', url, ua='jemoeder', auth_username='admin', auth_password='admin1243',auth_type='BASIC')
+c.http()
+#c = FtpCrawl(cfg, db, 'hoi', '192.168.178.30', 'ftpuser', 'sda')
+#c.ftp()
 
 def main():
     run(app=app, host='192.168.178.30', quiet=False, reloader=False, server='gevent')
