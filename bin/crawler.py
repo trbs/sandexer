@@ -241,11 +241,11 @@ class WebCrawl():
                 if 'www-authenticate' in response.headers:
                     auth = response.headers['www-authenticate'].lower()
                     if auth.startswith('basic') and self.crawl_auth_type is HTTPDigestAuth:
-                        return Error('Source \'%s\' - BASIC authentication required for accessing \'%s\'. (tried using DIGEST)' % (self.name, url))
-                    if auth.startswith('basic') and self.crawl_auth_type is HTTPBasicAuth:
-                        return Error('Source \'%s\' - Invalid authentication for accessing \'%s\'' % (self.name, url))
+                        return Error('Source \'%s\' - BASIC authentication required for accessing \'%s\'. (tried DIGEST)' % (self.name, url))
+                    if auth.startswith('digest') and self.crawl_auth_type is HTTPBasicAuth:
+                        return Error('Source \'%s\' - DIGEST authentication required for accessing \'%s\'. (tried BASIC)' % (self.name, url))
 
-                return Error('Source \'%s\' - (valid) authentication required for accessing \'%s\'' % (self.name, url))
+                return Error('Source \'%s\' - Invalid authentication while accessing \'%s\'' % (self.name, url))
             else:
                 return Error('Source \'%s\' - Invalid status code %s' % (self.name, str(response.status_code)))
 

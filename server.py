@@ -163,7 +163,7 @@ cfg = config.Config()
 cfg.reload()
 db = MongoDb(cfg)
 
-c = WebCrawl(cfg, db, 'hoi', 'http://192.168.178.30/files/', auth_username='admin', auth_password='admin123',auth_type='DIGEST')
+c = WebCrawl(cfg, db, 'hoi', 'http://192.168.178.30/files/', auth_username='admin2', auth_password='admin123',auth_type='BASIC')
 print c.http()
 
 
