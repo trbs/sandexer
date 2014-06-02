@@ -12,10 +12,8 @@ from bin.utils import isInt
 from bin.error import Error
 
 # to-do:
-# support for http auth
 # clean up some exceptions
 # requests timeout
-# fix crawl's __init__
 
 class WebCrawl():
     def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None, auth_type=None, ua=None, ssl_verify=False, interval=None):
