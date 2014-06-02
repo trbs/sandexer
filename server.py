@@ -165,9 +165,9 @@ cfg = config.Config()
 cfg.reload()
 db = MongoDb(cfg)
 
-url = ParseUrl('http://wipkip.nikhef.nl/events/CONFidence/')
+url = ParseUrl('http://wipkip.nikhef.nl/events/')
 
-c = WebCrawl(cfg, db, 'hoi', url, ua='jemoeder', auth_username='admin', auth_password='admin1243',auth_type='BASIC')
+c = WebCrawl(cfg, db, 'WipKip', url, ua='Sanderex Webcrawl')
 c.http()
 #c = FtpCrawl(cfg, db, 'hoi', '192.168.178.30', 'ftpuser', 'sda')
 #c.ftp()

@@ -205,12 +205,6 @@ class WebCrawl():
                 parsed = self.parse_opendir(response, discovered_files, dirs, dirs[0])
 
                 if isinstance(parsed, Debug):
-                    # do not store invalid opendirs
-#                    for i in range(0, len(discovered_files)):
-#                        if discovered_files[i].filename == dirs[0]:
-#                            discovered_files.pop(i)
-#                            break
-
                     dirs.pop(0)
                     continue
 
@@ -222,11 +216,8 @@ class WebCrawl():
             except Exception as ex:
                 return Debug(str(ex))
 
-        e = 'e'
         print len(discovered_files)
-        import sys
-        sys.exit()
-        #return discovered_files
+        return discovered_files
 
     def parse_opendir(self, response, discovered_files, dirs, rel=''):
         # i do not expect you to understand the following code
