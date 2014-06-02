@@ -6,4 +6,4 @@ class Error():
         self.now = datetime.now()
         self.message = message
         self.data = data
-        logging.error(message)
+        logging.error('Error: ' + message)

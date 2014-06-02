@@ -11,9 +11,6 @@ from mongo import DiscoveredFile
 from bin.utils import isInt
 from bin.error import Error
 
-# to-do:
-# clean up some exceptions
-# requests timeout
 
 class WebCrawl():
     def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None, auth_type=None, ua=None, ssl_verify=False, interval=None):
@@ -34,7 +31,7 @@ class WebCrawl():
 
         if isinstance(response_head, Error):
             # Website not found
-            return
+            return response_head
         else:
             discovered_files = None
 
@@ -240,6 +237,15 @@ class WebCrawl():
 
             if response.status_code == 200:
                 return response
+            elif response.status_code == 401:
+                if 'www-authenticate' in response.headers:
+                    auth = response.headers['www-authenticate'].lower()
+                    if auth.startswith('basic') and self.crawl_auth_type is HTTPDigestAuth:
+                        return Error('Source \'%s\' - BASIC authentication required for accessing \'%s\'. (tried using DIGEST)' % (self.name, url))
+                    if auth.startswith('basic') and self.crawl_auth_type is HTTPBasicAuth:
+                        return Error('Source \'%s\' - Invalid authentication for accessing \'%s\'' % (self.name, url))
+
+                return Error('Source \'%s\' - (valid) authentication required for accessing \'%s\'' % (self.name, url))
             else:
                 return Error('Source \'%s\' - Invalid status code %s' % (self.name, str(response.status_code)))
 
