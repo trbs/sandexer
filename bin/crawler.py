@@ -237,21 +237,31 @@ class WebCrawl():
 
             if response.status_code == 200:
                 return response
+
             elif response.status_code == 401:
                 if 'www-authenticate' in response.headers:
                     auth = response.headers['www-authenticate'].lower()
-                    if auth.startswith('basic') and self.crawl_auth_type is HTTPDigestAuth:
-                        return Error('Source \'%s\' - BASIC authentication required for accessing \'%s\'. (tried DIGEST)' % (self.name, url))
-                    if auth.startswith('digest') and self.crawl_auth_type is HTTPBasicAuth:
-                        return Error('Source \'%s\' - DIGEST authentication required for accessing \'%s\'. (tried BASIC)' % (self.name, url))
 
-                return Error('Source \'%s\' - Invalid authentication while accessing \'%s\'' % (self.name, url))
+                    if auth.startswith('basic'):
+                        if not self.crawl_auth:
+                            return Error('Source \'%s\' - Requires BASIC authentication. None provided.' % self.name)
+
+                        elif self.crawl_auth_type is HTTPDigestAuth:
+                            return Error('Source \'%s\' - BASIC authentication required for accessing \'%s\'. (tried DIGEST).' % (self.name, url))
+
+                    elif auth.startswith('digest'):
+                        if not self.crawl_auth:
+                            return Error('Source \'%s\' - Requires DIGEST authentication. None provided.' % self.name)
+                        elif self.crawl_auth_type is HTTPBasicAuth:
+                            return Error('Source \'%s\' - DIGEST authentication required for accessing \'%s\'. (tried BASIC).' % (self.name, url))
+
+                return Error('Source \'%s\' - Invalid authentication for \'%s\'.' % (self.name, url))
             else:
-                return Error('Source \'%s\' - Invalid status code %s' % (self.name, str(response.status_code)))
+                return Error('Source \'%s\' - Invalid status code \'%s\'.' % (self.name, str(response.status_code)))
 
         except requests.exceptions.Timeout:
-            return Error('Source \'%s\' - Timeout error fetching \'%s\'' % (self.name, url))
+            return Error('Source \'%s\' - Timeout error while fetching \'%s\'.' % (self.name, url))
         except requests.ConnectionError:
-            return Error('Source \'%s\' - Connection error fetching \'%s\'' % (self.name, url))
+            return Error('Source \'%s\' - Connection error while fetching \'%s\'. Is the server up?' % (self.name, url))
         except Exception as ex:
-            return Error('Source \'%s\' - Undefined error fetching \'%s\'' % (self.name, url))
+            return Error('Source \'%s\' - Undefined error while fetching \'%s\'.' % (self.name, url))
