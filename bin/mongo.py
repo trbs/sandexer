@@ -3,16 +3,6 @@ from datetime import datetime
 from pymongo import MongoClient
 from bin.utils import isInt, Debug
 
-class DiscoveredFile():
-    def __init__(self, host_name, path, name, filetype, size=None, modified=None, perm=None):
-        self.host_name = host_name
-        self.filepath = path
-        self.filename = name
-        self.filesize = int(size) if isInt(size) else size
-        self.filetype = filetype
-        self.filemodified = modified
-        self.fileperm = int(perm) if isInt(perm) else perm
-
 
 class MongoDb():
     def __init__(self, cfg):

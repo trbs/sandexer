@@ -5,13 +5,12 @@ from gevent import monkey; monkey.patch_all()
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 import requests
 import ftplib
-from humanbytes import human2bytes
+from bytes2human import human2bytes
 from random import randrange
 from time import sleep
 from datetime import datetime
 from bs4 import BeautifulSoup
 import zlib
-from mongo import DiscoveredFile
 from bin.utils import isInt
 from bin.utils import Debug
 
@@ -196,6 +195,13 @@ class WebCrawl():
             # cut the source some slack
             sleep(float(0.2))
 
+            # detect a loop
+            if dirs[0] and Discovery().detect_loop(dirs[0]):
+                d = Discovery()
+                discovered_files = d.fix_looped_discoveries(discovered_files, dirs[0])
+
+                dirs.pop(0)
+                continue
             try:
                 # fetch opendir
                 response = self.request(
@@ -219,7 +225,7 @@ class WebCrawl():
                     dirs.pop(0)
                     continue
 
-                # if anything came back, yay
+                # yay
                 discovered_files = parsed[0]
                 dirs = parsed[1]
 
@@ -228,7 +234,10 @@ class WebCrawl():
             except Exception as ex:
                 return Debug(str(ex))
 
-        print 'Discovered: ' + str(len(discovered_files))
+        for a in discovered_files:
+            print a.filepath + a.filename
+
+        #print 'Discovered: ' + str(len(discovered_files))
         return discovered_files
 
     def verify_opendir(self, soup, response):
@@ -317,6 +326,7 @@ class WebCrawl():
                                 pass
 
                     discovered_files.append(DiscoveredFile(self.name, rel, filename, 'd' if isdir else 'f', size, modified, None))
+
                     if isdir: dirs.append(rel+filename)
 
         return [discovered_files, dirs]
@@ -363,3 +373,47 @@ class WebCrawl():
             return Debug('Source \'%s\' - Connection error while fetching \'%s\'. Is the server up?' % (self.name, url))
         except Exception as ex:
             return Debug('Source \'%s\' - Undefined error while fetching \'%s\': %s' % (self.name, url, str(ex)))
+
+
+class DiscoveredFile():
+    def __init__(self, host_name, path, name, filetype, size=None, modified=None, perm=None):
+        self.host_name = host_name
+        self.filepath = path
+        self.filename = name
+        self.filesize = int(size) if isInt(size) else size
+        self.filetype = filetype
+        self.filemodified = modified
+        self.fileperm = int(perm) if isInt(perm) else perm
+
+class Discovery():
+    def __init__(self):
+        self._max_loops = 3
+
+    def detect_loop(self, path):
+        spl = path.split('/')[:-1][::-1]
+
+        if len(spl) > self._max_loops - 1 and \
+           spl[0] == spl[1] and \
+           spl[0] == spl[2]:
+                return True
+
+        return False
+
+    def fix_looped_discoveries(self, discovered_files, path):
+        spl = path.split('/')[:-1][::-1]
+        not_further = '/'.join(spl[self._max_loops - 1:][::-1]) + '/'
+
+        new = []
+        for z in discovered_files:
+            if not z.filepath.startswith(not_further):
+                new.append(z)
+            elif z.filetype == 'f':
+                if z.filepath == not_further:
+                    new.append(z)
+                elif not not_further.endswith(z.filepath.split('/')[-2] + '/'):
+                    new.append(z)
+            elif z.filetype == 'd':
+                if not z.filepath > not_further and not not_further.endswith(z.filename):
+                    new.append(z)
+
+        return new

@@ -1,2 +1,3 @@
-r3boot (http://r3blog.nl) (00index.sh)
+r3boot (http://r3blog.nl)
 zarya (http://gigafreak.net)
+maze (http://maze.io)

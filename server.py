@@ -165,14 +165,12 @@ cfg = config.Config()
 cfg.reload()
 db = MongoDb(cfg)
 
-import bin.test
-
 url = ParseUrl('http://wipkip.nikhef.nl/events/')
 
 from datetime import datetime
 start = datetime.now()
 print 'go'
-c = WebCrawl(cfg, db, 'WipKip', url, ua='sandexer webcrawl - https://github.com/skftn/sandexer/')
+c = WebCrawl(cfg, db, 'WipKip', url, ua='sandexer webcrawl - Groetjes van dsc - https://github.com/skftn/sandexer/')
 aa = c.http()
 from bin.utils import Debug
 if isinstance(aa, Debug):
