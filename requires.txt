@@ -1,7 +1,0 @@
-pip install bottle
-pip install bottle-cork
-pip install gevent
-pip install requests
-pip install beautifulsoup4
-apt-get install mongodb
-pip install pymongo
