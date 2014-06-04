@@ -304,7 +304,7 @@ class WebCrawl():
 
                 if '?C=' in filename and 'parent directory' in t.text.lower():
                     continue
-                    
+
                 if filename.startswith('./'):
                     filename = filename[2:]
 
@@ -337,6 +337,9 @@ class WebCrawl():
                             size = human2bytes(size)
                         except:
                             pass
+
+                    # to-do
+                    # 1. INSERTING fails when modified is bogus here
 
                 discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None))
 

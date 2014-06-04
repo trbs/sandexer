@@ -47,6 +47,7 @@ class Postgres():
         # to-do:
         # 1. watch out for sqli trough table_name
         # 2. https://pythonhosted.org/psycopg2/cursor.html#cursor.copy_expert
+        #    should work without having to use postgres superuser privs
         sql = 'COPY \"files_%s\" FROM \'%s\' DELIMITER \'|\' NULL \'None\';' % (source_name, temp)
         self._pool.execute(sql)
 

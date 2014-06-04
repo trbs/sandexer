@@ -39,4 +39,3 @@ class Config():
             return self._items[section][item]
         except:
             logging.warning('Could not access config variable \'%s\' from section \'%s\'' % (item, section))
-            return None
