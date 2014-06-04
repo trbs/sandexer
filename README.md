@@ -1,8 +1,8 @@
 sanderex
 ========
-	A lightweight file indexer for indexing files from multiple hosts, over multiple protocols.
+A lightweight file indexer for indexing files from multiple hosts, over multiple protocols.
 
-	Lightweight in the sense that it runs fine on sub-optimal hardware, sanderex is designed to run on machines ranging from raspberry-pi's to your latest Xeon box.
+Lightweight in the sense that it runs fine on sub-optimal hardware, sanderex is designed to run on machines ranging from raspberry-pi's to your latest Xeon box.
 
 
 	
