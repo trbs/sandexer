@@ -3,7 +3,7 @@ Crawwwwwlinnn in myyyyy skinnnnnnnn
 '''
 from gevent import monkey; monkey.patch_all()
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
-import requests
+import requests, urllib
 import ftplib
 from bytes2human import human2bytes
 from random import randrange
@@ -84,6 +84,7 @@ class WebCrawl():
                 if not isinstance(verify, Debug):
                     discovered_files = self.parse_protoindex(protoindexer)
 
+
             if not discovered_files:
                 # go for opendir
                 discovered_files = self.walk_opendir()
@@ -95,7 +96,7 @@ class WebCrawl():
             if len(discovered_files) == 0:
                 return 0
             else:
-                return self._db.try_add_files(discovered_files)
+                return self._db.try_add_files(discovered_files, self.name)
 
     def parse_protoindex(self, protoindex):
         pi = protoindex.split('\n')
@@ -107,20 +108,26 @@ class WebCrawl():
                     continue
 
                 spl = line.split(' ')
-                filetype = line[:1]
-                path = ''
+                isdir = True if line.startswith('d') else False
+                filepath = ''
+                filename = ''
+                fileperm = int(spl[3])
+                filesize = int(spl[2])
 
-                if filetype == 'f':
+                if not isdir:
                     file_spl = spl[4].split('/')
-                    file = file_spl[-1]
-                    path = '/'.join(file_spl[:-1])
-                    if not path.endswith('/') and path != '': path += '/'
+                    filename = file_spl[-1]
+                    filepath = '/'.join(file_spl[:-1])
+                    if not filepath.endswith('/') and filepath != '': filepath += '/'
                 else:
-                    if not spl[4] != '':
-                        path = spl[4] if spl[4].endswith('/') else spl[4] + '/'
-                    file = ''
+                    if spl[4]:
+                        filepath = spl[4] if spl[4].endswith('/') else spl[4] + '/'
+                    filename = ''
 
-                data.append(DiscoveredFile(self.name, path, file, True if filetype == 'f' else False, spl[2], spl[1], spl[3]))
+                modified = datetime.fromtimestamp(float(spl[1]))
+                filename = urllib.quote_plus(filename)
+
+                data.append(DiscoveredFile(self.name, filepath, filename, isdir, filesize, modified, fileperm))
 
         except Exception as ex:
             return Debug(str(ex))
@@ -161,13 +168,14 @@ class WebCrawl():
 
             d = zlib.decompressobj(16+zlib.MAX_WBITS) #this magic number can be inferred from the structure of a gzip file
             protoindex = ''
+            bytes_fetched = 0
 
             while True:
                 # read a block
                 data = response_indexer.raw.read(read_block_size)
-
+                bytes_fetched += read_block_size
                 # terminate if it went over the max file size
-                if len(protoindex) > protoindex_max_size:
+                if bytes_fetched > protoindex_max_size:
                     return Debug('Source \'%s\' - Indexer exceeded max file size \'%s\' (%s). Falling back to parsing webdav.' % (self.name, str(protoindex_max_size), str(len(protoindex))))
 
                 # break if end of download
@@ -193,7 +201,12 @@ class WebCrawl():
 
         while dirs:
             # cut the source some slack
-            #sleep(float(0.1))
+            sleep(float(0.2))
+
+            # ignore certain directories
+            if dirs[0] == 'CCC/pub/':
+                dirs.pop(0)
+                continue
 
             # detect a loop
             if dirs[0] and isinstance(Discovery().detect_loop(self.name, dirs[0]), Debug):

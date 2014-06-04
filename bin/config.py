@@ -5,13 +5,13 @@ import logging
 class Config():
     def __init__(self):
         self._last_accessed = None
-        self._app_root = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+        self.app_root = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 
         self._items = {}
 
     def reload(self):
         try:
-            cfg_file = '%s/conf/config' % self._app_root
+            cfg_file = '%s/conf/config' % self.app_root
             if not os.path.isfile(cfg_file):
                 raise Exception
 
@@ -31,7 +31,7 @@ class Config():
             self._items = data
             return True
         except:
-            logging.warning('Could not load config file \'%s/conf/config\'' % self._app_root)
+            logging.warning('Could not load config file \'%s/conf/config\'' % self.app_root)
             return False
 
     def get(self, section, item):

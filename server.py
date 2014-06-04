@@ -9,7 +9,7 @@ import logging
 
 import views.views as Views
 
-#logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.DEBUG)
+#logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.INFO)
 #log = logging.getLogger(__name__)
 #debug(True)
 
@@ -165,20 +165,19 @@ cfg = config.Config()
 cfg.reload()
 db = Postgres(cfg)
 
-url = ParseUrl('http://192.168.178.30/files/')
+url = ParseUrl('http://wipkip.nikhef.nl/events/')
 
 #import bin.test
 
 from datetime import datetime
 start = datetime.now()
-c = WebCrawl(cfg, db, 'WipKip', url, ua='sandexer webcrawl - Groetjes van dsc - https://github.com/skftn/sandexer/')
+c = WebCrawl(cfg, db, 'WipKip', url, ua='sandexer webcrawl - Kusjes van dsc - https://github.com/skftn/sandexer/')
 aa = c.http()
 from bin.utils import Debug
 if isinstance(aa, Debug):
     print aa.message
 else:
-    #print 'Added: ' + str(aa)
-    e= 'e'
+    print 'Added: ' + str(aa)
 end = datetime.now()
 print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
 

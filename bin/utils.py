@@ -1,5 +1,7 @@
 import sys
 import os
+import string
+import random
 from datetime import datetime
 import logging
 import inspect
@@ -17,9 +19,11 @@ def isInt(num):
     except:
         return False
 
+def generate_string(size=16, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 class Debug():
-    def __init__(self, message, data=None, warning=False):
+    def __init__(self, message, data=None, warning=False, info=False):
         try:
             self.caller = inspect.stack()[1][0].f_locals.get('self', None).__class__.__name__
         except:
@@ -28,7 +32,11 @@ class Debug():
         self.now = datetime.now()
         self.message = message
         self.data = data
+
         if warning:
             logging.warning('class:%s - %s' % (self.caller,message))
+        elif info:
+            logging.info('class:%s - %s' % (self.caller, message))
         else:
             logging.error('class:%s - %s' % (self.caller,message))
+
