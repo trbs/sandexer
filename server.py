@@ -11,7 +11,7 @@ import views.views as Views
 
 #logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.DEBUG)
 #log = logging.getLogger(__name__)
-debug(True)
+#debug(True)
 
 # Init bottle app
 app = app()
@@ -159,24 +159,26 @@ def logout():
 import bin.config as config
 from bin.crawler import WebCrawl, FtpCrawl
 from bin.urlparse import ParseUrl
-from bin.mongo import MongoDb
+from bin.db import Postgres
 
 cfg = config.Config()
 cfg.reload()
-db = MongoDb(cfg)
+db = Postgres(cfg)
 
-url = ParseUrl('http://wipkip.nikhef.nl/events/')
+url = ParseUrl('http://192.168.178.30/files/')
+
+#import bin.test
 
 from datetime import datetime
 start = datetime.now()
-print 'go'
 c = WebCrawl(cfg, db, 'WipKip', url, ua='sandexer webcrawl - Groetjes van dsc - https://github.com/skftn/sandexer/')
 aa = c.http()
 from bin.utils import Debug
 if isinstance(aa, Debug):
     print aa.message
 else:
-    print 'Added: ' + str(aa)
+    #print 'Added: ' + str(aa)
+    e= 'e'
 end = datetime.now()
 print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
 

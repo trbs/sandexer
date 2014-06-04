@@ -3,4 +3,4 @@ bottle-cork
 gevent
 requests
 beautifulsoup4
-pymongo
+psycopg2

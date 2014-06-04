@@ -120,7 +120,7 @@ class WebCrawl():
                         path = spl[4] if spl[4].endswith('/') else spl[4] + '/'
                     file = ''
 
-                data.append(DiscoveredFile(self.name, path, file, filetype, spl[2], spl[1], spl[3]))
+                data.append(DiscoveredFile(self.name, path, file, True if filetype == 'f' else False, spl[2], spl[1], spl[3]))
 
         except Exception as ex:
             return Debug(str(ex))
@@ -193,10 +193,10 @@ class WebCrawl():
 
         while dirs:
             # cut the source some slack
-            sleep(float(0.2))
+            #sleep(float(0.1))
 
             # detect a loop
-            if dirs[0] and Discovery().detect_loop(dirs[0]):
+            if dirs[0] and isinstance(Discovery().detect_loop(self.name, dirs[0]), Debug):
                 d = Discovery()
                 discovered_files = d.fix_looped_discoveries(discovered_files, dirs[0])
 
@@ -234,10 +234,7 @@ class WebCrawl():
             except Exception as ex:
                 return Debug(str(ex))
 
-        for a in discovered_files:
-            print a.filepath + a.filename
-
-        #print 'Discovered: ' + str(len(discovered_files))
+        print 'Discovered: ' + str(len(discovered_files))
         return discovered_files
 
     def verify_opendir(self, soup, response):
@@ -282,7 +279,7 @@ class WebCrawl():
             chunks = [opendir_html]
 
         if rel == '':
-            discovered_files.append(DiscoveredFile(self.name, '', '', 'd'))
+            discovered_files.append(DiscoveredFile(self.name, '/', None, True))
 
         for chunk in chunks:
             soup = BeautifulSoup(chunk)
@@ -325,7 +322,7 @@ class WebCrawl():
                             except:
                                 pass
 
-                    discovered_files.append(DiscoveredFile(self.name, rel, filename, 'd' if isdir else 'f', size, modified, None))
+                    discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None))
 
                     if isdir: dirs.append(rel+filename)
 
@@ -381,7 +378,7 @@ class DiscoveredFile():
         self.filepath = path
         self.filename = name
         self.filesize = int(size) if isInt(size) else size
-        self.filetype = filetype
+        self.isdir = filetype
         self.filemodified = modified
         self.fileperm = int(perm) if isInt(perm) else perm
 
@@ -389,13 +386,13 @@ class Discovery():
     def __init__(self):
         self._max_loops = 3
 
-    def detect_loop(self, path):
+    def detect_loop(self, source_name, path):
         spl = path.split('/')[:-1][::-1]
 
         if len(spl) > self._max_loops - 1 and \
            spl[0] == spl[1] and \
            spl[0] == spl[2]:
-                return True
+                return Debug('Source \'%s\' - Possible loop found (\'%s\'). Cleaning up previously indexed files from in the loop...' % (source_name, path))
 
         return False
 
@@ -407,12 +404,12 @@ class Discovery():
         for z in discovered_files:
             if not z.filepath.startswith(not_further):
                 new.append(z)
-            elif z.filetype == 'f':
+            elif not z.isdir:
                 if z.filepath == not_further:
                     new.append(z)
                 elif not not_further.endswith(z.filepath.split('/')[-2] + '/'):
                     new.append(z)
-            elif z.filetype == 'd':
+            else:
                 if not z.filepath > not_further and not not_further.endswith(z.filename):
                     new.append(z)
 

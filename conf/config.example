@@ -10,6 +10,8 @@ default_ua = SanderexCrawl
 timeout = 5
 
 [Database]
-enabled = 1
-source = mongodb://localhost:27017/
-name = search
+host=127.0.0.1
+port=5432
+db=db_name
+user=db_user
+pass=db_pass
