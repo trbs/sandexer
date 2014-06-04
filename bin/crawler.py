@@ -166,14 +166,15 @@ class WebCrawl():
                 if protoindex_size > protoindex_max_size:
                     return Debug('Source \'%s\' - Indexer exceeded max file size \'%s\' (%s). Falling back to parsing webdav.' % (self.name, str(protoindex_max_size), str(protoindex_size)))
 
-            d = zlib.decompressobj(16+zlib.MAX_WBITS) #this magic number can be inferred from the structure of a gzip file
             protoindex = ''
             bytes_fetched = 0
+            d = zlib.decompressobj(16+zlib.MAX_WBITS) #this magic number can be inferred from the structure of a gzip file
 
             while True:
                 # read a block
                 data = response_indexer.raw.read(read_block_size)
                 bytes_fetched += read_block_size
+
                 # terminate if it went over the max file size
                 if bytes_fetched > protoindex_max_size:
                     return Debug('Source \'%s\' - Indexer exceeded max file size \'%s\' (%s). Falling back to parsing webdav.' % (self.name, str(protoindex_max_size), str(len(protoindex))))
@@ -301,43 +302,45 @@ class WebCrawl():
             for t in soup.findAll('a', href=True):
                 filename = t.attrs['href']
 
-                if not '?C=' in filename and not 'parent directory' in t.text.lower():
-                    if filename.startswith('./'):
-                        filename = filename[2:]
+                if '?C=' in filename and 'parent directory' in t.text.lower():
+                    continue
+                    
+                if filename.startswith('./'):
+                    filename = filename[2:]
 
-                    isdir = True if filename.endswith('/') else False
-                    modified = None
-                    size = None
+                isdir = True if filename.endswith('/') else False
+                modified = None
+                size = None
 
-                    a = t.parent
-                    b = t.parent.text
-                    c = b[:b.find('\n')].split(' ')
+                a = t.parent
+                b = t.parent.text
+                c = b[:b.find('\n')].split(' ')
 
-                    if a.text.endswith('</li>'):
-                        pass
-                    elif len(c) > 1:
-                        a = t.parent.text
-                        a = a[:a.find('\n')]
-                        spl = [z for z in a.split(' ') if z]
+                if a.text.endswith('</li>'):
+                    pass
+                elif len(c) > 1:
+                    a = t.parent.text
+                    a = a[:a.find('\n')]
+                    spl = [z for z in a.split(' ') if z]
+                else:
+                    a = a.parent.text[len(filename):]
+                    spl = [filename] + [z for z in a.split(' ') if z]
+
+                if spl[0] == filename and len(spl) > 1:
+                    modified = '%s %s' % (spl[1], spl[2])
+                    size = None if spl[3] == '-' else spl[3].replace(' ', '')
+                    if spl[3] == '-':
+                        size = None
                     else:
-                        a = a.parent.text[len(filename):]
-                        spl = [filename] + [z for z in a.split(' ') if z]
+                        size = spl[3].replace(' ', '')
+                        try:
+                            size = human2bytes(size)
+                        except:
+                            pass
 
-                    if spl[0] == filename and len(spl) > 1:
-                        modified = '%s %s' % (spl[1], spl[2])
-                        size = None if spl[3] == '-' else spl[3].replace(' ', '')
-                        if spl[3] == '-':
-                            size = None
-                        else:
-                            size = spl[3].replace(' ', '')
-                            try:
-                                size = human2bytes(size)
-                            except:
-                                pass
+                discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None))
 
-                    discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None))
-
-                    if isdir: dirs.append(rel+filename)
+                if isdir: dirs.append(rel+filename)
 
         return [discovered_files, dirs]
 
