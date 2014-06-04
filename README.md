@@ -1,4 +1,4 @@
-sanderex
+sandexer
 ========
 A lightweight file indexer for indexing files from multiple hosts, over multiple protocols.
 
