@@ -15,13 +15,13 @@ from bin.utils import isInt
 from bin.utils import Debug
 
 #to-do:
-# support HTTP/SMB/FTP/AFP
+# support SMB/FTP/AFP
 # 0. dont care about sharetraps (301's and such)
 # 1. 00INDEX.xz - https://docs.python.org/dev/library/lzma.html
 # 2. 00INDEX.gz - (done)
 # 3. 00SHARE
-# 4. opendir (almost done)
-# 5. watch out for loops (symlinks)
+# 4. opendir (done)
+# 5. watch out for loops (done)
 
 class FtpCrawl():
     def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None):
