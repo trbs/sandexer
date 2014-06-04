@@ -14,7 +14,7 @@ Installation
     ~$ virtualenv sanderex
     ~$ cd $_
     ~$ source bin/activate
-    ~$ git clone https://github.com/nattewasbeer/dushi.py-web.git
+    ~$ git clone https://github.com/skftn/sandexer.git
     ~$ mv sanderex src
     ~$ cd $_
     ~$ pip install -r requirements
