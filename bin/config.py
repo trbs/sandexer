@@ -25,8 +25,17 @@ class Config():
                 for k,v in cfg.items(section):
                     try:
                         data[section][k] = int(v)
+                        continue
                     except:
-                        data[section][k] = v
+                        pass
+                    if v.lower() == 'false':
+                        data[section][k] = False
+                        continue
+                    elif v.lower() == 'true':
+                        data[section][k] = True
+                        continue
+                        
+                    data[section][k] = v
 
             self._items = data
             return True

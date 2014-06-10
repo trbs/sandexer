@@ -2,16 +2,31 @@
 from gevent import monkey
 monkey.patch_all()
 
-from bottle import error, post, get, run, static_file, abort, redirect, response, request, template, debug, app, route, view
+from bottle import error, post, get, run, static_file, abort, redirect, response, request,  debug, app, route, view, jinja2_view, Jinja2Template
+
 from beaker.middleware import SessionMiddleware
 from cork import Cork
+
 import logging
 
 import views.views as Views
+import bin.config as config
+#from bin.crawler import WebCrawl, FtpCrawl
+#from bin.urlparse import ParseUrl
+from bin.db import Postgres
 
-#logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.INFO)
-#log = logging.getLogger(__name__)
-#debug(True)
+cfg = config.Config()
+cfg.reload()
+
+if cfg.get('Debug', 'enabled'):
+    logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.INFO)
+    log = logging.getLogger(__name__)
+    debug(True)
+
+cfg = config.Config()
+cfg.reload()
+db = Postgres(cfg)
+
 
 # Init bottle app
 app = app()
@@ -56,6 +71,13 @@ def info():
     view.is_admin = request.environ.get('beaker.session')['username'] == 'admin'
 
     return template('info', view=view)
+
+@route('/bla')
+def info():
+    """Only authenticated users can see this"""
+    aaa.require(fail_redirect='/login')
+
+    return template('bla')
 
 @route('/search')
 def search():
@@ -156,30 +178,24 @@ def delete_user():
 def logout():
     aaa.logout(success_redirect='/login')
 
-import bin.config as config
-from bin.crawler import WebCrawl, FtpCrawl
-from bin.urlparse import ParseUrl
-from bin.db import Postgres
 
-cfg = config.Config()
-cfg.reload()
-db = Postgres(cfg)
 
-url = ParseUrl('http://wipkip.nikhef.nl/events/')
+#
+#url = ParseUrl('http://192.168.178.30/files/')
 
 #import bin.test
 
 from datetime import datetime
-start = datetime.now()
-c = WebCrawl(cfg, db, 'WipKip', url, ua='sandexer webcrawl - Kusjes van dsc - https://github.com/skftn/sandexer/')
-aa = c.http()
-from bin.utils import Debug
-if isinstance(aa, Debug):
-    print aa.message
-else:
-    print 'Added: ' + str(aa)
-end = datetime.now()
-print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
+#start = datetime.now()
+#c = WebCrawl(cfg, db, 'WipKip', url, ua='sandexer webcrawl - Kusjes van dsc - https://github.com/skftn/sandexer/')
+#aa = c.http()
+#from bin.utils import Debug
+#if isinstance(aa, Debug):
+#    print aa.message
+#else:
+#    print 'Added: ' + str(aa)
+#end = datetime.now()
+#print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
 
 #c = FtpCrawl(cfg, db, 'hoi', '192.168.178.30', 'ftpuser', 'sda')
 #c.ftp()

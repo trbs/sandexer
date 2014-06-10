@@ -128,22 +128,24 @@
 
     <div id="help">
         <div style="height:10px;"></div>
+        <h2>Help</h2>
 
-        <h4>Source Name</h4>
+        <h3>Source</h3>
+        <h4>Name</h4>
         The name will be visibile troughout the searches. It is a way of identifying this source from others.
 
         <div style="height:20px;"></div>
 
-        <h4>Source Protocol</h4>
+        <h4>Protocol</h4>
         Pick any of the available protocols.
         <div style="height:20px;"></div>
 
-        <h4>Source Location</h4>
+        <h4>Location</h4>
         The location to the source. Examples:
         <div style="margin-left:20px;margin-top:10px;">
-        <b>HTTP(s) (url):</b><h4><span style="margin-left:20px;" class="label label-default">http://192.168.1.3/files/</span></h4>
+        <b>HTTP(s):</b><h4><span style="margin-left:20px;" class="label label-default">http://192.168.1.3/files/</span></h4>
         <br>
-        <b>FTP (url):</b><h4><span style="margin-left:20px;" class="label label-default">ftp://192.168.1.3/files/</span></h4>
+        <b>FTP:</b><h4><span style="margin-left:20px;" class="label label-default">ftp://192.168.1.3/files/</span></h4>
         </div>
         <div style="height:20px;"></div>
 

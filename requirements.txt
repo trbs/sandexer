@@ -4,3 +4,6 @@ gevent
 requests
 beautifulsoup4
 psycopg2
+python-dateutil
+jinja2
+beaker

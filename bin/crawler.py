@@ -5,6 +5,7 @@ from gevent import monkey; monkey.patch_all()
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 import requests, urllib
 import ftplib
+import dateutil.parser
 from bytes2human import human2bytes
 from random import randrange
 from time import sleep
@@ -50,7 +51,9 @@ class FtpCrawl():
             print f
 
 class WebCrawl():
-    def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None, auth_type=None, ua=None, ssl_verify=False, interval=None):
+    # to-do:
+    # clean up this mess
+    def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None, auth_type=None, ua=None, ssl_verify=False, interval=None, crawl_wait=None):
         self._cfg = cfg
         self._db = db
         self.name = name
@@ -60,6 +63,7 @@ class WebCrawl():
         self.crawl_auth_type = HTTPBasicAuth if auth_type == 'BASIC' else HTTPDigestAuth
         self.crawl_auth = None if not auth_type else self.crawl_auth_type(auth_username, auth_password)
         self.crawl_interval = interval
+        self.crawl_wait = crawl_wait if crawl_wait else 0
 
     def http(self):
         response_head = self.request(
@@ -109,20 +113,15 @@ class WebCrawl():
 
                 spl = line.split(' ')
                 isdir = True if line.startswith('d') else False
-                filepath = ''
-                filename = ''
+                filepath = '/'
                 fileperm = int(spl[3])
                 filesize = int(spl[2])
 
-                if not isdir:
-                    file_spl = spl[4].split('/')
-                    filename = file_spl[-1]
-                    filepath = '/'.join(file_spl[:-1])
-                    if not filepath.endswith('/') and filepath != '': filepath += '/'
-                else:
-                    if spl[4]:
-                        filepath = spl[4] if spl[4].endswith('/') else spl[4] + '/'
-                    filename = ''
+                #if not isdir:
+                file_spl = spl[4].split('/')
+                filename = file_spl[-1]
+                filepath = '/' + '/'.join(file_spl[:-1])
+                if not filepath.endswith('/'): filepath += '/'
 
                 modified = datetime.fromtimestamp(float(spl[1]))
                 filename = urllib.quote_plus(filename)
@@ -201,8 +200,9 @@ class WebCrawl():
         dirs = ['']
 
         while dirs:
-            # cut the source some slack
-            sleep(float(0.2))
+            if self.crawl_wait:
+                # cut the source some slack
+                sleep(float(self.crawl_wait))
 
             # ignore certain directories
             if dirs[0] == 'CCC/pub/':
@@ -264,7 +264,7 @@ class WebCrawl():
         opendir_html = response.content
 
         # if the opendir contains a lot of files, divide the html in chunks so beautifulsoup parses faster
-        # unncesary for fast machines but optimization is always nice (think raspberry pi)
+        # unncesary for fast machines but optimization is always nice
         page_size = len(opendir_html)
         chunks = []
         chunk_size = 15000 # in characters
@@ -299,10 +299,13 @@ class WebCrawl():
             soup = BeautifulSoup(chunk)
 
             # do not try to understand the following
+            # to-do:
+            # 1. needs more exception handling
+
             for t in soup.findAll('a', href=True):
                 filename = t.attrs['href']
 
-                if '?C=' in filename and 'parent directory' in t.text.lower():
+                if '?C=' in filename or 'parent directory' in t.text.lower():
                     continue
 
                 if filename.startswith('./'):
@@ -338,8 +341,13 @@ class WebCrawl():
                         except:
                             pass
 
-                    # to-do
-                    # 1. INSERTING fails when modified is bogus here
+                try:
+                    modified = dateutil.parser.parse(modified)
+                except:
+                    pass
+
+                rel = '/' if not rel else rel
+                if not rel.startswith('/'): rel = '/' + rel
 
                 discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None))
 
