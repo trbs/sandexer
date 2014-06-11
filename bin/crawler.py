@@ -25,10 +25,11 @@ from bin.utils import Debug
 # 5. watch out for loops (done)
 
 class FtpCrawl():
-    def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None):
+    def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None, g=None):
         self._cfg = cfg
         self._db = db
         self.name = name
+        self._g = g
         self.crawl_url = url
         self.auth_username = auth_username if auth_username else 'anonymous'
         self.auth_password = auth_password if auth_password else 'anonymous'
@@ -407,6 +408,7 @@ class DiscoveredFile():
         self.filesize = int(size) if isInt(size) else size
         self.isdir = filetype
         self.filemodified = modified
+        self.fileadded = datetime.now()
         self.fileperm = int(perm) if isInt(perm) else perm
 
 class Discovery():
@@ -419,7 +421,7 @@ class Discovery():
         if len(spl) > self._max_loops - 1 and \
            spl[0] == spl[1] and \
            spl[0] == spl[2]:
-                return Debug('Source \'%s\' - Possible loop found (\'%s\'). Cleaning up previously indexed files from in the loop...' % (source_name, path))
+                return Debug.add('Source \'%s\' - Possible loop found (\'%s\'). Cleaning up previously indexed files from in the loop...' % (source_name, path))
 
         return False
 

@@ -1,9 +1,10 @@
 #!/bin/bash -e
 #proto-index 1.1.0 - 2-6-2014
 #credits:
-#   r3boot (http://r3blog.nl)
-#   maze (http://maze.io)
-#
+#   trbs (trbs.net)
+#   r3boot (r3blog.nl)
+#   maze (maze.io)
+
 #put this in your crontab:
 #3 4 * * * (cd /path/yo/want/to/index ; /path/for/scripts/00index.sh) > /var/log/00index.log 2>&1
 (

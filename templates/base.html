@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sanderex - {{title}}</title>
+
+    <!-- Bootstrap Core -->
+    <link href="/static/lib/bootstrap-3.1.1-dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="/static/css/main.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="blog-masthead">
+        <div class="container">
+            <nav class="blog-nav">
+                {% for item in navigation %}
+                    {% if title == item.caption %}
+                        <a class="blog-nav-item active" href="{{item.href}}">{{item.caption}}</a>
+                    {% else %}
+                        <a class="blog-nav-item" href="{{item.href}}">{{item.caption}}</a>
+                    {% endif %}
+                {% endfor %}
+            </nav>
+        </div>
+    </div>
+
+    {% block content %} {% endblock %}
+
+    <!--{% if title != 'Login' %}-->
+    <!--<div class="blog-footer" style="bottom:0;">-->
+        <!--<p><a href="https://github.com/skftn/sanderex">Sanderex</a> v0.1 beta by <a href="http://own3d.be">Sander 'dsc' Ferdinand</a>.</p>-->
+    <!--</div>-->
+    <!--{% endif %}-->
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/static/lib/filefinder.js"></script>
+    <script src="/static/lib/bootstrap-3.1.1-dist/js/bootstrap.min.js"></script>
+</body>
+</html>

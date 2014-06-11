@@ -5,7 +5,7 @@ import contextlib
 import gevent
 from gevent.queue import Queue
 from gevent.socket import wait_read, wait_write
-from psycopg2 import extensions, OperationalError, connect
+from psycopg2 import extensions, OperationalError, connect, ProgrammingError
 
 
 if sys.version_info[0] >= 3:

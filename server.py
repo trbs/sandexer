@@ -1,49 +1,47 @@
-#coding: utf-8
 from gevent import monkey
 monkey.patch_all()
 
-from bottle import error, post, get, run, static_file, abort, redirect, response, request,  debug, app, route, view, jinja2_view, Jinja2Template
+from bottle import error, post, get, run, static_file, abort, redirect, response, request,  debug, app, route, jinja2_view, Jinja2Template, url
 
 from beaker.middleware import SessionMiddleware
 from cork import Cork
 
 import logging
+import functools
 
-import views.views as Views
-import bin.config as config
-#from bin.crawler import WebCrawl, FtpCrawl
-#from bin.urlparse import ParseUrl
+from bin.config import Config
 from bin.db import Postgres
+from bin.utils import Debug
 
-cfg = config.Config()
+cfg = Config()
 cfg.reload()
 
-if cfg.get('Debug', 'enabled'):
+if cfg.get('General', 'debug'):
     logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.INFO)
     log = logging.getLogger(__name__)
     debug(True)
 
-cfg = config.Config()
-cfg.reload()
+# Init DB
 db = Postgres(cfg)
+db.init_db()
+db.add_source('hoi', '')
 
-
-# Init bottle app
-app = app()
-
-# Use users.json and roles.json in the local users directory
+# Authentication, Authorization and Accounting. Use users.json and roles.json in users/
 aaa = Cork('users')
 
-session_opts = {
-    'session.cookie_expires': True,
-    'session.encrypt_key': 'please use a random key and keep it secret!',
-    'session.httponly': True,
-    'session.timeout': 3600 * 24,  # 1 day
-    'session.type': 'cookie',
-    'session.validate_key': True,
-    }
+# Init bottle app
+app = SessionMiddleware(app(), cfg.HttpSessionOptions())
 
-app = SessionMiddleware(app, session_opts)
+# Wrapping jinja2_view for easier access
+view = functools.partial(jinja2_view, template_lookup=['templates'])
+
+Jinja2Template.defaults = {
+    'url': url,
+    'site_name': 'sandexer'
+}
+Jinja2Template.settings = {
+    'autoescape': True,
+}
 
 def postd():
     return request.forms
@@ -51,33 +49,45 @@ def postd():
 def post_get(name, default=''):
     return request.POST.get(name, default).strip()
 
+def generate_navigation(admin):
+    return [{'href': '/', 'caption': 'Home'},
+            {'href': '/browse', 'caption': 'Browse'},
+            {'href': '/search', 'caption': 'Search'},
+            {'href': '/logout', 'caption': 'Logout'},
+            {'href': '/admin', 'caption': 'Admin'} if admin else None]
+
 @route('/')
+@view('index.html')
 def root():
     """Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
 
-    view = Views.Options
-    view.important_message = 'Hi welcome to my site please don\'t fucking wreck shit kthx.'
-    view.is_admin = request.environ.get('beaker.session')['username'] == 'admin'
+    message = 'Hi welcome to my site please don\'t fucking wreck shit kthx.'
+    admin = request.environ.get('beaker.session')['username'] == 'admin'
 
-    return template('index', login=False, view=view)
+    return {
+        'title': 'Home',
+        'navigation': generate_navigation(admin),
+        'welcome_message': message
+    }
 
-@route('/info')
+@route('/debug')
+@view('debug.html')
 def info():
+    """Only admins can see this"""
+    aaa.require(role='admin', fail_redirect='/404')
+
+    return {
+        ''
+    }
+
+@route('/bla/:name', name='bla')
+@view('bla.html')
+def info(name):
     """Only authenticated users can see this"""
-    aaa.require(fail_redirect='/login')
+    #aaa.require(fail_redirect='/login')
 
-    view = Views.Options
-    view.is_admin = request.environ.get('beaker.session')['username'] == 'admin'
-
-    return template('info', view=view)
-
-@route('/bla')
-def info():
-    """Only authenticated users can see this"""
-    aaa.require(fail_redirect='/login')
-
-    return template('bla')
+    return {'name': name, 'title': 'hoi'}
 
 @route('/search')
 def search():
@@ -94,8 +104,12 @@ def server_static(filename):
     return static_file(filename, root='static/')
 
 @route('/login')
+@view('login.html')
 def login():
-    return template('login_form', login=False, view=Views.Options(), ascii=True)
+    return {
+        'title': 'Login',
+        'navigation': [{'href': 'login', 'caption': 'Login'}]
+    }
 
 @route('/login_post', method='POST')
 def login_post():
@@ -178,7 +192,18 @@ def delete_user():
 def logout():
     aaa.logout(success_redirect='/login')
 
-
+@bottle.error(404)
+@bottle.error(500)
+@bottle.error(501)
+@bottle.error(502)
+@bottle.error(503)
+@bottle.error(504)
+@bottle.error(505)
+@view('error.html')
+def error404(error):
+    return {
+        'title': 'Error'
+    }
 
 #
 #url = ParseUrl('http://192.168.178.30/files/')

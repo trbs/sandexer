@@ -2,6 +2,8 @@ import ConfigParser
 import os
 import logging
 
+
+
 class Config():
     def __init__(self):
         self._last_accessed = None
@@ -23,6 +25,9 @@ class Config():
                 data[section] = {}
 
                 for k,v in cfg.items(section):
+                    if k.startswith('#') or v.startswith('#'):
+                        continue
+
                     try:
                         data[section][k] = int(v)
                         continue
@@ -34,7 +39,7 @@ class Config():
                     elif v.lower() == 'true':
                         data[section][k] = True
                         continue
-                        
+
                     data[section][k] = v
 
             self._items = data
@@ -48,3 +53,13 @@ class Config():
             return self._items[section][item]
         except:
             logging.warning('Could not access config variable \'%s\' from section \'%s\'' % (item, section))
+
+    def HttpSessionOptions(self):
+        return {
+            'session.cookie_expires': True,
+            'session.encrypt_key': self.get('HttpSession', 'encrypt_key'),
+            'session.httponly': self.get('HttpSession', 'httponly'),
+            'session.timeout': 3600 * self.get('HttpSession', 'timeout'),  # 1 day
+            'session.type': 'cookie',
+            'session.validate_key': True,
+            }

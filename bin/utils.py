@@ -6,6 +6,7 @@ from datetime import datetime
 import logging
 import inspect
 
+
 def bytesTo(bytes, to, bsize=1024):
     r = float(bytes)
     for i in range({'k' : 1, 'm': 2, 'g' : 3, 't' : 4, 'p' : 5, 'e' : 6 }[to]):
@@ -33,10 +34,11 @@ class Debug():
         self.message = message
         self.data = data
 
-        if warning:
-            logging.warning('class:%s - %s' % (self.caller,message))
-        elif info:
-            logging.info('class:%s - %s' % (self.caller, message))
-        else:
-            logging.error('class:%s - %s' % (self.caller,message))
+        msg = 'class:%s - %s' % (self.caller,message)
 
+        if warning:
+            logging.warning(msg)
+        elif info:
+            logging.info(msg)
+        else:
+            logging.error(msg)
