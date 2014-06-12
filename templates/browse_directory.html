@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="height:40px;"></div>
+<div class="container">
+    <div class="row">
+        {{title}}
+
+        {% if files %}
+            {% for f in files %}
+                {{f.filename}}<br>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -7,24 +7,35 @@ from beaker.middleware import SessionMiddleware
 from cork import Cork
 
 import logging
-import functools
+import logging.config
+import logging.handlers
+import functools, sys
 
 from bin.config import Config
 from bin.db import Postgres
+from bin.sources import Sources
 from bin.utils import Debug
 
 cfg = Config()
 cfg.reload()
 
+logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.DEBUG)
+log_handler = logging.handlers.RotatingFileHandler('debug.out', maxBytes=2048576)
+
+log = logging.getLogger('file_logger')
 if cfg.get('General', 'debug'):
-    logging.basicConfig(format='localhost - - [%(asctime)s] %(message)s', level=logging.INFO)
-    log = logging.getLogger(__name__)
+    log.addHandler(log_handler)
     debug(True)
 
 # Init DB
 db = Postgres(cfg)
-db.init_db()
-db.add_source('hoi', '')
+db_init = db.init_db()
+if isinstance(db_init, Debug):
+    log.error(str(Debug))
+    sys.exit()
+
+file_sources = Sources(db)
+file_sources.get_sources()
 
 # Authentication, Authorization and Accounting. Use users.json and roles.json in users/
 aaa = Cork('users')
@@ -39,6 +50,7 @@ Jinja2Template.defaults = {
     'url': url,
     'site_name': 'sandexer'
 }
+
 Jinja2Template.settings = {
     'autoescape': True,
 }
@@ -77,17 +89,68 @@ def info():
     """Only admins can see this"""
     aaa.require(role='admin', fail_redirect='/404')
 
+    debuglist = []
+
+    try:
+        f = open('debug.out', 'r')
+        debuglist = f.readlines()
+        f.close()
+    except:
+        pass
+
     return {
-        ''
+        'debuglist': reversed(debuglist)
     }
 
-@route('/bla/:name', name='bla')
-@view('bla.html')
-def info(name):
-    """Only authenticated users can see this"""
-    #aaa.require(fail_redirect='/login')
+@route('/test')
+def test():
+    return jinja2_view('bla.html', name='hoi')
 
-    return {'name': name, 'title': 'hoi'}
+@route('/browse')
+@view('browse.html')
+def browse():
+    """Only authenticated users can see this"""
+    aaa.require(fail_redirect='/login')
+
+    admin = request.environ.get('beaker.session')['username'] == 'admin'
+
+    return {
+        'title': 'Browse',
+        'navigation': generate_navigation(admin)
+    }
+
+@route('/browse/')
+@view('browse.html')
+def browse():
+    """Only authenticated users can see this"""
+    aaa.require(fail_redirect='/login')
+
+    #sources = db.get_sources()
+
+    return {
+        'title': 'Browse',
+        'sources': sources,
+        'navigation': generate_navigation(admin)
+    }
+
+@route('/browse/<path:path>')
+@view('browse_directory.html')
+def browse_dir(path):
+    files = []
+    spl = path.split('/')
+    source_name = spl[0]
+    path =  '/'.join(spl[1:])
+    path = '/' + path
+
+    for source in file_sources.list:
+        if source.name == source_name:
+            files = db.get_directory(source_name, path)
+
+    return {
+        'title': path,
+        'files': files,
+        'navigation': generate_navigation(admin)
+    }
 
 @route('/search')
 def search():
@@ -206,13 +269,16 @@ def error404(error):
     }
 
 #
-#url = ParseUrl('http://192.168.178.30/files/')
+from bin.urlparse import ParseUrl
+url = ParseUrl('http://wipkip.nikhef.nl/events')
+
 
 #import bin.test
-
-from datetime import datetime
+#
+#from datetime import datetime
+#from bin.crawler import WebCrawl
 #start = datetime.now()
-#c = WebCrawl(cfg, db, 'WipKip', url, ua='sandexer webcrawl - Kusjes van dsc - https://github.com/skftn/sandexer/')
+#c = WebCrawl(cfg=cfg, db=db, name='WipKip', url=url, ua='sandexer webcrawl - Kusjes van dsc - https://github.com/skftn/sandexer/')
 #aa = c.http()
 #from bin.utils import Debug
 #if isinstance(aa, Debug):
@@ -221,7 +287,7 @@ from datetime import datetime
 #    print 'Added: ' + str(aa)
 #end = datetime.now()
 #print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
-
+#
 #c = FtpCrawl(cfg, db, 'hoi', '192.168.178.30', 'ftpuser', 'sda')
 #c.ftp()
 

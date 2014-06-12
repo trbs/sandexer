@@ -17,19 +17,14 @@ from bin.utils import Debug
 
 #to-do:
 # support SMB/FTP/AFP
-# 0. dont care about sharetraps (301's and such)
 # 1. 00INDEX.xz - https://docs.python.org/dev/library/lzma.html
-# 2. 00INDEX.gz - (done)
-# 3. 00SHARE
-# 4. opendir (done)
-# 5. watch out for loops (done)
+# 2. 00SHARE
 
 class FtpCrawl():
-    def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None, g=None):
+    def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None):
         self._cfg = cfg
         self._db = db
         self.name = name
-        self._g = g
         self.crawl_url = url
         self.auth_username = auth_username if auth_username else 'anonymous'
         self.auth_password = auth_password if auth_password else 'anonymous'
@@ -52,19 +47,28 @@ class FtpCrawl():
             print f
 
 class WebCrawl():
-    # to-do:
-    # clean up this mess
-    def __init__(self, cfg, db, name, url, auth_username=None, auth_password=None, auth_type=None, ua=None, ssl_verify=False, interval=None, crawl_wait=None):
-        self._cfg = cfg
-        self._db = db
-        self.name = name
-        self.crawl_url = url
-        self.crawl_ua = ua if ua else self._cfg.get('Crawler', 'default_ua')
-        self.crawl_sslverify = ssl_verify
-        self.crawl_auth_type = HTTPBasicAuth if auth_type == 'BASIC' else HTTPDigestAuth
-        self.crawl_auth = None if not auth_type else self.crawl_auth_type(auth_username, auth_password)
-        self.crawl_interval = interval
-        self.crawl_wait = crawl_wait if crawl_wait else 0
+    def __init__(self, **kwargs):
+        self._cfg = kwargs['cfg']
+        self._db = kwargs['db']
+        self.name = kwargs['name']
+        self.crawl_url = kwargs['url']
+        self.crawl_ua = kwargs['ua'] if 'ua' in kwargs else self._cfg.get('Crawler', 'default_ua')
+        self.crawl_sslverify = kwargs['ssl_verify'] if 'ssl_verify' in kwargs else self._cfg.get('Crawler', 'verify_ssl')
+
+        if 'auth_type' in kwargs:
+            if kwargs['auth_type'] == 'BASIC':
+                self.crawl_auth_type = HTTPBasicAuth
+            elif kwargs['auth_type'] == 'DIGEST':
+                self.crawl_auth_type = HTTPDigestAuth
+        else:
+            self.crawl_auth_type = None
+
+        if 'auth_username' in kwargs and 'auth_password' in kwargs:
+            self.crawl_auth = self.crawl_auth_type(kwargs['auth_username'], kwargs['auth_password'])
+        else:
+            self.crawl_auth = None
+
+        self.crawl_wait = kwargs['crawl_wait'] if 'crawl_wait' in kwargs else 0
 
     def http(self):
         response_head = self.request(
@@ -89,7 +93,6 @@ class WebCrawl():
                 if not isinstance(verify, Debug):
                     discovered_files = self.parse_protoindex(protoindexer)
 
-
             if not discovered_files:
                 # go for opendir
                 discovered_files = self.walk_opendir()
@@ -101,7 +104,7 @@ class WebCrawl():
             if len(discovered_files) == 0:
                 return 0
             else:
-                return self._db.try_add_files(discovered_files, self.name)
+                return self._db.add_files(discovered_files, self.name)
 
     def parse_protoindex(self, protoindex):
         pi = protoindex.split('\n')
@@ -401,14 +404,13 @@ class WebCrawl():
 
 
 class DiscoveredFile():
-    def __init__(self, host_name, path, name, filetype, size=None, modified=None, perm=None):
+    def __init__(self, host_name, path, name, isdir, size=None, modified=None, perm=None):
         self.host_name = host_name
         self.filepath = path
         self.filename = name
         self.filesize = int(size) if isInt(size) else size
-        self.isdir = filetype
+        self.isdir = isdir
         self.filemodified = modified
-        self.fileadded = datetime.now()
         self.fileperm = int(perm) if isInt(perm) else perm
 
 class Discovery():
@@ -421,7 +423,7 @@ class Discovery():
         if len(spl) > self._max_loops - 1 and \
            spl[0] == spl[1] and \
            spl[0] == spl[2]:
-                return Debug.add('Source \'%s\' - Possible loop found (\'%s\'). Cleaning up previously indexed files from in the loop...' % (source_name, path))
+                return Debug('Source \'%s\' - Possible loop found (\'%s\'). Cleaning up previously indexed files from in the loop...' % (source_name, path))
 
         return False
 

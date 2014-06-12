@@ -30,15 +30,17 @@ class Debug():
         except:
             self.caller = '?'
 
+        self._log = logging.getLogger('file_logger')
         self.now = datetime.now()
         self.message = message
         self.data = data
 
-        msg = 'class:%s - %s' % (self.caller,message)
+        msg = 'class:%s:{{TYPE}} - %s' % (self.caller,message)
+        date = self.now.strftime('%d %b %Y %H:%M:%S')
 
         if warning:
-            logging.warning(msg)
+            self._log.warning('%s:%s' % (date,msg.replace('{{TYPE}}', 'WARNING')))
         elif info:
-            logging.info(msg)
+            self._log.info('%s:%s' % (date,msg.replace('{{TYPE}}', 'INFO')))
         else:
-            logging.error(msg)
+            self._log.error('%s:%s' % (date,msg.replace('{{TYPE}}', 'ERROR')))

@@ -5,8 +5,12 @@ import os
 from gevent.pool import Pool
 from bin.utils import Debug, generate_string
 from datetime import datetime
+from bin.crawler import DiscoveredFile
 from bin.psycopg2_pool import PostgresConnectionPool, ProgrammingError
 import random
+
+# to-do:
+# clean this up a bit
 
 class Postgres():
     def __init__(self, cfg):
@@ -27,9 +31,10 @@ class Postgres():
 
     def init_db(self):
         sql = 'SELECT count(*) from sources'
-        try:
-            return self._pool.execute(sql)
-        except ProgrammingError:
+
+        result = self._pool.execute(sql)
+
+        if isinstance(result, Debug):
             return self._pool.execute('''
                 CREATE TABLE sources
                 (
@@ -52,16 +57,24 @@ class Postgres():
                   OIDS=FALSE
                 );
                 ALTER TABLE sources
-                  OWNER TO sanderex;
+                  OWNER TO %s;
                 COMMENT ON COLUMN sources.filetypes IS '
                 0: Random files
                 1: Documents
                 2: Movies
                 3: Music
                 4: Pictures';
-            ''')
+            ''' % self._cfg.get('Postgres', 'db'))
 
-    def add_source(self, source_name, options):
+    def fetch_sources(self):
+        sql = 'SELECT * from sources'
+
+        try:
+            return self._pool.fetchall(sql)
+        except:
+            return Debug('Could not fetch table sources')
+
+    def add_source(self, source_name, opts):
         sql = 'SELECT name FROM sources WHERE name=\'%s\'' % source_name
 
         result = self._execute(sql)
@@ -92,8 +105,8 @@ class Postgres():
               OIDS=FALSE
             );
             ALTER TABLE "files_WipKip"
-              OWNER TO sanderex;
-        ''' % source_name
+              OWNER TO %s;
+        ''' % (source_name, self._cfg.get('Postgres', 'db'))
 
         result = self._execute(sql)
 
@@ -104,26 +117,28 @@ class Postgres():
 
         return True
 
-
-
     def add_files(self, discovered_files, source_name):
-        # to-do:
-        # 1. watch out for sqli trough table_name
-
         start = datetime.now()
 
         sql = 'DELETE FROM \"files_%s\";' % source_name
         self._execute(sql)
 
-        temp = '%s/tmp/%s' % (self._cfg.app_root, generate_string(random.randrange(5,12)) + '.crawl')
+        temp = '/tmp/%s.crawl' % generate_string(random.randrange(5,12))
         f = open(temp, 'w')
 
         inserts = 0
+        total_size = 0
+        total_files = 0
+
         for df in discovered_files:
-            isdir = str(df.isdir).lower()[:1]
-            line = '%s|%s|%s|%s|%s|%s|%s|%s\n' % (isdir, df.filename, df.filesize, df.filepath, df.filemodified, df.fileperm, inserts+1, df.fileadded)
+            isdir = str(df.isdir).upper()
+            line = '%s|%s|%s|%s|%s|%s|%s\n' % (isdir, df.filename, df.filesize, df.filepath, df.filemodified, df.fileperm, inserts+1)
             f.write(line)
+
             inserts += 1
+            total_size += df.filesize if df.filesize != 4096 else 0
+            if not df.isdir:
+                total_files += 1
 
         f.close()
 
@@ -135,42 +150,33 @@ class Postgres():
 
         os.remove(temp)
         end = datetime.now()
-        Debug('Source %s - %s seconds for %s item INSERTS' % (source_name, str((end - start).total_seconds()),inserts))
+        Debug('Source %s - %s seconds for %s item INSERTS' % (source_name, str((end - start).total_seconds()),inserts), info=True)
 
-    def _execute(self, sql):
+        # Update the total size of the indexed Source
+        # Should be save from sqli as long as source_name is alphanummeric.
+        sql = 'UPDATE sources SET total_size=%s where name=\'%s\';' % (total_size, source_name)
+        self._execute(sql)
+
+        # Update the last crawled time
+        # Should be save from sqli as long as source_name is alphanummeric
+        sql = 'UPDATE sources SET crawl_lastcrawl=%s WHERE name=\'%s\';' % (start, source_name)
+        self._execute(sql)
+
+    def get_directory(self, source_name, path):
+        sql = 'SELECT * from \"files_%s\" WHERE filepath ' % source_name
+        sql += 'LIKE %s;'
+
+        data = []
+
+        results = self._pool.fetchall(sql, [path])
+
+        for r in results:
+            data.append(DiscoveredFile(source_name, r[3], r[1], r[0], r[2], r[4], r[5]))
+
+        return data
+
+    def _execute(self, sql, params=None):
         try:
-            return self._pool.execute(sql)
+            return self._pool.execute(sql, params)
         except Exception as ex:
             return Debug('Could not execute SQL command: %s\n--\n%s--' % (sql ,str(ex)), warning=True)
-
-#    def try_add_files(self, discovered_files):
-#        start = datetime.now()
-#        inserts = 0
-#        jobs = []
-#        job_pool = Pool(self._gevent_poolsize)
-#
-#        for df in discovered_files:
-#            sql = 'SELECT is_directory, filepath, filename from ' + '\"files_WipKip\"' + ' WHERE filepath=%s AND filename=%s AND is_directory=%s'
-#            data = (df.filepath, df.filename, str(df.isdir))
-#
-#            result = self._pool.fetchone(sql, data)
-#
-#            if not result:
-#                # to-do: fix sqli lmao
-#                sql = 'INSERT INTO ' + '\"files_WipKip\"' + ' (is_directory, filename,filesize, filepath,filemodified, fileperm) VALUES (%s, %s, %s, %s ,%s ,%s)'
-#
-#                data = (str(df.isdir),
-#                        df.filename, df.filesize,
-#                        df.filepath, None,
-#                        420)
-#
-#                jobs.append(job_pool.spawn(self._pool.execute, sql, data))
-#
-#            inserts += 1
-#
-#        gevent.joinall(jobs)
-#
-#        end = datetime.now()
-#        print 'INSERTS: ' + str((end - start).total_seconds()) + ' seconds for %s items' % inserts
-#
-#        return inserts

@@ -1,8 +1,9 @@
-
+{% block content %}
 <body bgcolor="black">
 <div style="margin-left:50px;margin-top:50px;">
     {% for item in debuglist %}
-    <span style="color:green;font-family:monospace;">item</span><br>
-    {$ endfor %}
+    <span style="color:lime;font-size:16px;font-family:monospace;">{{item}}</span><br>
+    {% endfor %}
 </div>
 </body>
+{% endblock %}
