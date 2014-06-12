@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
+
+<div style="height: 20px;"></div>
 <div class="container">
     <div class="row">
         <table class="table table-condensed" width="647">
@@ -7,29 +9,27 @@
             <tr>
                 <th></th>
                 <th>Name</th>
-                <th>Description</th>
+                <th style="min-width: 240px;">Description</th>
                 <th>Address</th>
                 <th>Protocol</th>
-                <th>Size</th>
+                <th>Bandwidth</th>
+                <th>Updated</th>
+                <th style="min-width: 50px;">Size</th>
             </tr>
             </thead>
             <tbody>
+            {% for source in sources %}
             <tr>
-                <td><div style="margin-top:-5px;"><img src="http://www.chickenmasters.be/pictures/428_detail.jpg?1323703168" width=64px height=64px/></div></td>
-                <td>WipKip</td>
-                <td>eoihndiohndio ndfhion iodfhofhoi hndio nido ndfiohn  ind ofnhifdh ndi ndifhondfh  niodh</td>
-                <td>http://wipkip.nikhef.nl/events/</td>
-                <td>HTPP</td>
-                <td>45 GB</td>
+                <td><div style="margin-top:-5px;"><img src="http://www.minecraftforum.net/uploads/profile/photo-3380320.jpg?_r=1400806451" width=64px height=64px/></div></td>
+                <td><b>{{source.name}}</b></td>
+                <td>{{source.description}}</td>
+                <td>{{source.crawl_url}}</td>
+                <td>{{source.crawl_protocol}}</td>
+                <td>{{source.bandwidth}}</td>
+                <td>{{source.added}}</td>
+                <td>{{source.total_size}}</td>
             </tr>
-            <tr>
-                <td><div style="margin-top:-5px;"><img src="http://www.chickenmasters.be/pictures/428_detail.jpg?1323703168" width=64px height=64px/></div></td>
-                <td>WipKip</td>
-                <td>eoihndiohndio ndfhion iodfhofhoi hndio nido ndfiohn  ind ofnhifdh ndi ndifhondfh  niodh</td>
-                <td>http://wipkip.nikhef.nl/events/</td>
-                <td>HTPP</td>
-                <td>45 GB</td>
-            </tr>
+            {% endfor %}
             </tbody>
         </table>
     </div>

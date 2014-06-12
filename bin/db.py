@@ -1,13 +1,12 @@
 import gevent
 import gevent.monkey
 gevent.monkey.patch_all()
-import os
 from gevent.pool import Pool
 from bin.utils import Debug, generate_string
 from datetime import datetime
-from bin.crawler import DiscoveredFile
+from bin.dataobjects import DiscoveredFile, DataObjectManipulation
 from bin.psycopg2_pool import PostgresConnectionPool, ProgrammingError
-import random
+import random, os, urllib
 
 # to-do:
 # clean this up a bit
@@ -92,21 +91,20 @@ class Postgres():
             CREATE TABLE "files_%s"
             (
               is_directory boolean NOT NULL,
-              filename name,
+              filename text,
               filesize bigint,
               filepath text,
               filemodified timestamp without time zone,
               fileperm integer,
-              id serial NOT NULL,
-              fileadded timestamp without time zone NOT NULL,
-              CONSTRAINT por PRIMARY KEY (id )
+              id serial primary key,
+              fileadded timestamp without time zone NOT NULL
             )
             WITH (
               OIDS=FALSE
             );
-            ALTER TABLE "files_WipKip"
+            ALTER TABLE "files_%s"
               OWNER TO %s;
-        ''' % (source_name, self._cfg.get('Postgres', 'db'))
+        ''' % (source_name, source_name, self._cfg.get('Postgres', 'db'))
 
         result = self._execute(sql)
 
@@ -132,7 +130,8 @@ class Postgres():
 
         for df in discovered_files:
             isdir = str(df.isdir).upper()
-            line = '%s|%s|%s|%s|%s|%s|%s\n' % (isdir, df.filename, df.filesize, df.filepath, df.filemodified, df.fileperm, inserts+1)
+
+            line = '%s|%s|%s|%s|%s|%s|%s|%s\n' % (isdir, urllib.quote_plus(df.filename), df.filesize, urllib.quote_plus(df.filepath), df.filemodified, df.fileperm, inserts+1, start)
             f.write(line)
 
             inserts += 1
@@ -159,19 +158,21 @@ class Postgres():
 
         # Update the last crawled time
         # Should be save from sqli as long as source_name is alphanummeric
-        sql = 'UPDATE sources SET crawl_lastcrawl=%s WHERE name=\'%s\';' % (start, source_name)
+        sql = 'UPDATE sources SET crawl_lastcrawl=\'%s\' WHERE name=\'%s\';' % (start, source_name)
         self._execute(sql)
 
     def get_directory(self, source_name, path):
-        sql = 'SELECT * from \"files_%s\" WHERE filepath ' % source_name
-        sql += 'LIKE %s;'
+        sql = 'SELECT * from \"files_%s\" WHERE filepath = ' % source_name
+        sql += '%s;'
 
         data = []
 
-        results = self._pool.fetchall(sql, [path])
+        results = self._pool.fetchall(sql, [urllib.quote_plus(path)])
 
         for r in results:
-            data.append(DiscoveredFile(source_name, r[3], r[1], r[0], r[2], r[4], r[5]))
+            df = DiscoveredFile(source_name, r[3], r[1], r[0], r[2], r[4], r[5])
+            df = DataObjectManipulation(df).humanize(humansizes=True, humandates=True, humanfile=True, humanpath=True)
+            data.append(df)
 
         return data
 

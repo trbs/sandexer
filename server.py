@@ -7,14 +7,15 @@ from beaker.middleware import SessionMiddleware
 from cork import Cork
 
 import logging
-import logging.config
 import logging.handlers
 import functools, sys
 
+from bin.bytes2human import bytes2human, human2bytes
 from bin.config import Config
 from bin.db import Postgres
-from bin.sources import Sources
+from bin.dataobjects import Sources, DataObjectManipulation
 from bin.utils import Debug
+
 
 cfg = Config()
 cfg.reload()
@@ -33,6 +34,7 @@ db_init = db.init_db()
 if isinstance(db_init, Debug):
     log.error(str(Debug))
     sys.exit()
+
 
 file_sources = Sources(db)
 file_sources.get_sources()
@@ -114,6 +116,9 @@ def browse():
 
     admin = request.environ.get('beaker.session')['username'] == 'admin'
 
+    a = file_sources.list
+    b = 'e'
+
     return {
         'title': 'Browse',
         'navigation': generate_navigation(admin)
@@ -125,7 +130,12 @@ def browse():
     """Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
 
-    #sources = db.get_sources()
+    sources = file_sources.list
+
+    for source in sources:
+        source = DataObjectManipulation(source).humanize(humandates=True, dateformat='%d/%m/%Y %H:%M', humansizes=True)
+
+
 
     return {
         'title': 'Browse',
@@ -147,7 +157,7 @@ def browse_dir(path):
             files = db.get_directory(source_name, path)
 
     return {
-        'title': path,
+        'title': 'Browse',
         'files': files,
         'navigation': generate_navigation(admin)
     }
@@ -270,15 +280,13 @@ def error404(error):
 
 #
 from bin.urlparse import ParseUrl
-url = ParseUrl('http://wipkip.nikhef.nl/events')
+url = ParseUrl('https://pindakaas.gigafreak.net/export/')
+#url = ParseUrl('http://wipkip.nikhef.nl/events/')
 
-
-#import bin.test
-#
 #from datetime import datetime
 #from bin.crawler import WebCrawl
 #start = datetime.now()
-#c = WebCrawl(cfg=cfg, db=db, name='WipKip', url=url, ua='sandexer webcrawl - Kusjes van dsc - https://github.com/skftn/sandexer/')
+#c = WebCrawl(cfg=cfg, db=db, name='Zarya', url=url, ua='sandexer webcrawl - dsc - https://github.com/skftn/sandexer/')
 #aa = c.http()
 #from bin.utils import Debug
 #if isinstance(aa, Debug):

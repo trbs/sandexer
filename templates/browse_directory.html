@@ -3,12 +3,12 @@
 <div style="height:40px;"></div>
 <div class="container">
     <div class="row">
-        {{title}}
-
         {% if files %}
             {% for f in files %}
-                {{f.filename}}<br>
+                {{f.filename}} - {{f.filesize}}<br>
             {% endfor %}
+        {% else %}
+            nothing found
         {% endif %}
     </div>
 </div>

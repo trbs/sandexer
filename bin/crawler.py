@@ -3,7 +3,7 @@ Crawwwwwlinnn in myyyyy skinnnnnnnn
 '''
 from gevent import monkey; monkey.patch_all()
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
-import requests, urllib
+import requests
 import ftplib
 import dateutil.parser
 from bytes2human import human2bytes
@@ -12,7 +12,7 @@ from time import sleep
 from datetime import datetime
 from bs4 import BeautifulSoup
 import zlib
-from bin.utils import isInt
+from bin.dataobjects import DiscoveredFile
 from bin.utils import Debug
 
 #to-do:
@@ -116,6 +116,9 @@ class WebCrawl():
                     continue
 
                 spl = line.split(' ')
+                spl[4] = ' '.join(spl[4:])
+                spl = spl[:5]
+
                 isdir = True if line.startswith('d') else False
                 filepath = '/'
                 fileperm = int(spl[3])
@@ -128,7 +131,6 @@ class WebCrawl():
                 if not filepath.endswith('/'): filepath += '/'
 
                 modified = datetime.fromtimestamp(float(spl[1]))
-                filename = urllib.quote_plus(filename)
 
                 data.append(DiscoveredFile(self.name, filepath, filename, isdir, filesize, modified, fileperm))
 
@@ -194,7 +196,8 @@ class WebCrawl():
             return Debug(str(ex))
 
     def verify_protoindex(self, protoindex):
-        if not protoindex.startswith('# proto-index v=') or not protoindex.endswith('# end proto-index\n'):
+        # Only 1.0.0 is supported at this time
+        if not protoindex.startswith('# proto-index v=1.0.0') or not protoindex.endswith('# end proto-index\n'):
             return Debug('Source \'%s\' - Could not verify index' % self.name)
 
         return True
@@ -402,16 +405,6 @@ class WebCrawl():
         except Exception as ex:
             return Debug('Source \'%s\' - Undefined error while fetching \'%s\': %s' % (self.name, url, str(ex)))
 
-
-class DiscoveredFile():
-    def __init__(self, host_name, path, name, isdir, size=None, modified=None, perm=None):
-        self.host_name = host_name
-        self.filepath = path
-        self.filename = name
-        self.filesize = int(size) if isInt(size) else size
-        self.isdir = isdir
-        self.filemodified = modified
-        self.fileperm = int(perm) if isInt(perm) else perm
 
 class Discovery():
     def __init__(self):
