@@ -280,7 +280,6 @@ def error404(error):
 
 #
 from bin.urlparse import ParseUrl
-url = ParseUrl('https://pindakaas.gigafreak.net/export/')
 #url = ParseUrl('http://wipkip.nikhef.nl/events/')
 
 #from datetime import datetime
