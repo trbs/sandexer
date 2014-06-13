@@ -15,7 +15,7 @@ function endsWith(str, suffix) {
 function post(data){
     $.ajax({
         type: 'POST',
-        url: 'post',
+        url: '/post',
         data: data,
         dataType: 'json',
         success: function(res){

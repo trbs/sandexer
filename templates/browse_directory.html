@@ -1,15 +1,92 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="height:40px;"></div>
+<style>
+    .table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+        background-color: #d7d7d7;
+        cursor: pointer;
+    }
+    ol{
+        font-size:16px;
+    }
+    .breadcrumb > li + li:before {
+        content: ">";
+        color: #999999;
+
+    }
+    .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+        line-height: 25px;
+        min-height: 25px;
+        height: 32px;
+        padding-left: 12px;
+    }
+    .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+        padding: 0px;
+        padding-left:10px;
+
+    }
+    a:hover{
+        text-decoration: none;
+    }
+</style>
+
+<div style="height:10px;"></div>
+
 <div class="container">
     <div class="row">
+
+        <div style="height: 10px;"></div>
+        <!--<div style="border:1px solid red;height: 200px;"></div>-->
+
         {% if files %}
+            <ol class="breadcrumb">
+                <li><a href="/browse">Sources</a></li>
+                {% for crumb in breadcrumbs %}
+                    {% if crumb['active'] %}
+                        <li class="active">{{crumb['name']}}</li>
+                    {% else %}
+                        <li><a href="/{{crumb['href']}}">{{crumb['name']}}</a></li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+
+            <table id="navigationTable" class="table table-hover">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Filename</th>
+                    <th style="min-width: 50px;">Size</th>
+                    <th>Permission</th>
+                    <th>Modified</th>
+                </tr>
+            </thead>
+            <tbody data-link="row" class="rowlink">
             {% for f in files %}
-                {{f.filename}} - {{f.filesize}}<br>
+                <tr>
+                    <td class="rowlink-skip" style="background-color:white;">
+                        <div id="{{f.filename}}" class="filethumbnail">
+                            <img src="http://icons.iconarchive.com/icons/visualpharm/icons8-metro-style/512/Very-Basic-File-icon.png" width=16px height=16px/>
+                            <div style="height: 2px;"></div>
+                        </div>
+                    </td>
+                    <td><a href="{{f.filename}}/" target="_self"><b>{{f.filename}}</b></a></td>
+                    <td>{{f.filesize}}</td>
+                    <td>{{f.fileperm}}</td>
+                    <td>{{f.filemodified}}</td>
+                </tr>
             {% endfor %}
+            </tbody>
+        </table>
         {% else %}
             nothing found
         {% endif %}
     </div>
 </div>
+<script>
+    $(document).ready(function(){
+        $(function(){
+            $("#navigationTable").tablesorter();
+
+        });
+    });
+</script>
 {% endblock %}

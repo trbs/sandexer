@@ -97,7 +97,8 @@ class Postgres():
               filemodified timestamp without time zone,
               fileperm integer,
               id serial primary key,
-              fileadded timestamp without time zone NOT NULL
+              fileadded timestamp without time zone NOT NULL,
+              thumbnail_url text
             )
             WITH (
               OIDS=FALSE
@@ -171,7 +172,8 @@ class Postgres():
 
         for r in results:
             df = DiscoveredFile(source_name, r[3], r[1], r[0], r[2], r[4], r[5])
-            df = DataObjectManipulation(df).humanize(humansizes=True, humandates=True, humanfile=True, humanpath=True)
+            dom = DataObjectManipulation()
+            df = dom.humanize(df, humansizes=True, humandates=True, humanfile=True, humanpath=True)
             data.append(df)
 
         return data

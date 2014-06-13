@@ -8,13 +8,14 @@ from cork import Cork
 
 import logging
 import logging.handlers
-import functools, sys
+import functools, sys, operator
 
 from bin.bytes2human import bytes2human, human2bytes
 from bin.config import Config
 from bin.db import Postgres
 from bin.dataobjects import Sources, DataObjectManipulation
 from bin.utils import Debug
+from bin.api import Api
 
 
 cfg = Config()
@@ -36,7 +37,7 @@ if isinstance(db_init, Debug):
     sys.exit()
 
 
-file_sources = Sources(db)
+file_sources = Sources(db, cfg)
 file_sources.get_sources()
 
 # Authentication, Authorization and Accounting. Use users.json and roles.json in users/
@@ -57,11 +58,7 @@ Jinja2Template.settings = {
     'autoescape': True,
 }
 
-def postd():
-    return request.forms
-
-def post_get(name, default=''):
-    return request.POST.get(name, default).strip()
+api = Api(db, cfg)
 
 def generate_navigation(admin):
     return [{'href': '/', 'caption': 'Home'},
@@ -69,6 +66,22 @@ def generate_navigation(admin):
             {'href': '/search', 'caption': 'Search'},
             {'href': '/logout', 'caption': 'Logout'},
             {'href': '/admin', 'caption': 'Admin'} if admin else None]
+
+def generate_breadcrumps(path, dir=''):
+    crumbs = []
+    spl = [z for z in path.split('/') if z]
+
+    for i in range(0,len(spl)):
+        link = '/'.join(spl[:i+1])
+        if not link.endswith('/'): link += '/'
+        name = link[:-1].split('/')[-1]
+
+        crumbs.append({
+            'href': dir + link,
+            'name': name,
+            'active': 'active' if i == len(spl) -1 else ''})
+
+    return crumbs
 
 @route('/')
 @view('index.html')
@@ -85,44 +98,13 @@ def root():
         'welcome_message': message
     }
 
-@route('/debug')
-@view('debug.html')
-def info():
-    """Only admins can see this"""
-    aaa.require(role='admin', fail_redirect='/404')
-
-    debuglist = []
-
-    try:
-        f = open('debug.out', 'r')
-        debuglist = f.readlines()
-        f.close()
-    except:
-        pass
-
-    return {
-        'debuglist': reversed(debuglist)
-    }
-
-@route('/test')
-def test():
-    return jinja2_view('bla.html', name='hoi')
-
 @route('/browse')
 @view('browse.html')
 def browse():
     """Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
 
-    admin = request.environ.get('beaker.session')['username'] == 'admin'
-
-    a = file_sources.list
-    b = 'e'
-
-    return {
-        'title': 'Browse',
-        'navigation': generate_navigation(admin)
-    }
+    return redirect('/browse/')
 
 @route('/browse/')
 @view('browse.html')
@@ -133,9 +115,8 @@ def browse():
     sources = file_sources.list
 
     for source in sources:
-        source = DataObjectManipulation(source).humanize(humandates=True, dateformat='%d/%m/%Y %H:%M', humansizes=True)
-
-
+        dom = DataObjectManipulation()
+        source = dom.humanize(source, humandates=True, dateformat='%d/%m/%Y %H:%M', humansizes=True)
 
     return {
         'title': 'Browse',
@@ -155,11 +136,13 @@ def browse_dir(path):
     for source in file_sources.list:
         if source.name == source_name:
             files = db.get_directory(source_name, path)
+            files.sort(key=operator.attrgetter("filename"), reverse=False)
 
     return {
         'title': 'Browse',
         'files': files,
-        'navigation': generate_navigation(admin)
+        'navigation': generate_navigation(admin),
+        'breadcrumbs': generate_breadcrumps(source_name+path, 'browse/')
     }
 
 @route('/search')
@@ -187,16 +170,18 @@ def login():
 @route('/login_post', method='POST')
 def login_post():
     """Authenticate users"""
-    username = post_get('username')
-    password = post_get('password')
+    username = api.post_get('username')
+    password = api.post_get('password')
     aaa.login(username, password, success_redirect='/', fail_redirect='/login')
 
 @route('/post', method='POST')
 def post():
-    aaa.require(fail_redirect='/login')
-    name = post_get('name')
-    a = request.POST
-    print name
+    #aaa.require(fail_redirect='/404')
+
+    data = request.POST
+    result = api.handle_post(data)
+
+    return result
 
 @route('/user_is_anonymous')
 def user_is_anonymous():
@@ -264,6 +249,25 @@ def delete_user():
 @route('/logout')
 def logout():
     aaa.logout(success_redirect='/login')
+
+@route('/debug')
+@view('debug.html')
+def debug():
+    """Only admins can see this"""
+    aaa.require(role='admin', fail_redirect='/404')
+
+    debuglist = []
+
+    try:
+        f = open('debug.out', 'r')
+        debuglist = f.readlines()
+        f.close()
+    except:
+        pass
+
+    return {
+        'debuglist': reversed(debuglist)
+    }
 
 @bottle.error(404)
 @bottle.error(500)
