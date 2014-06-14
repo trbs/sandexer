@@ -109,7 +109,7 @@ class WebCrawl():
 
     def parse_protoindex(self, protoindex):
         pi = protoindex.split('\n')
-        data = []
+        discovered_files = []
         ff = Fileformats(self._cfg)
 
         try:
@@ -140,12 +140,12 @@ class WebCrawl():
 
                 modified = datetime.fromtimestamp(float(spl[1]))
 
-                data.append(DiscoveredFile(self.name, filepath, filename, isdir, filesize, modified, fileperm, fileformat, ext))
+                discovered_files.append(DiscoveredFile(self.name, filepath, filename, isdir, filesize, modified, fileperm, fileformat, ext))
 
         except Exception as ex:
             return Debug(str(ex))
 
-        return data
+        return discovered_files
 
     def fetch_protoindex(self, url):
         try:
@@ -213,13 +213,8 @@ class WebCrawl():
     def walk_opendir(self):
         discovered_files = []
         dirs = ['']
-        bbbb = 0
 
         while dirs:
-            bbbb += 1
-            if bbbb > 3:
-                return discovered_files
-
             if self.crawl_wait:
                 # cut the source some slack
                 #sleep(float(self.crawl_wait))
@@ -318,6 +313,7 @@ class WebCrawl():
 
         for chunk in chunks:
             soup = BeautifulSoup(chunk)
+            ff = Fileformats(self._cfg)
 
             # do not try to understand the following
             # to-do:
@@ -335,6 +331,8 @@ class WebCrawl():
                 isdir = True if filename.endswith('/') else False
                 modified = None
                 size = None
+                ext = None
+                fileformat = 0
 
                 a = t.parent
                 b = t.parent.text
@@ -370,9 +368,18 @@ class WebCrawl():
                 rel = '/' if not rel else rel
                 if not rel.startswith('/'): rel = '/' + rel
 
-                discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None))
+                if not isdir and '.' in filename:
+                    ext = filename.split('.')[-1].lower()
+                    fileformat = ff.get_fileformat(ext)
 
-                if isdir: dirs.append(rel+filename)
+                if isdir:
+                    if filename.endswith('/'):
+                        dirs.append(rel+filename)
+                        filename = filename[:-1]
+                    else:
+                        dirs.append(rel+filename)
+
+                discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None, fileformat=fileformat, fileext=ext))
 
         return [discovered_files, dirs]
 

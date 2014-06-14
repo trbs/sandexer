@@ -122,7 +122,7 @@ class Postgres():
               id serial primary key,
               fileadded timestamp without time zone NOT NULL,
               fileext text,
-              fileformat integer NOT NULL DEFAULT 0
+              fileformat integer
             )
             WITH (
               OIDS=FALSE
@@ -141,6 +141,7 @@ class Postgres():
         return True
 
     def add_files(self, discovered_files, source_name):
+        # All of the sql queries should be save from SQL injection IF the source name is alphanummeric!
         start = datetime.now()
 
         sql = 'DELETE FROM \"files_%s\";' % source_name
@@ -157,13 +158,17 @@ class Postgres():
         for df in discovered_files:
             isdir = str(df.isdir).upper()
 
-            line = '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' % (isdir, urllib.quote_plus(df.filename), df.filesize, urllib.quote_plus(df.filepath), df.filemodified, df.fileperm, inserts+1, start, df.fileext, df.fileformat)
+            df.filename = urllib.quote_plus(df.filename) if df.filename else None
+            df.filepath = urllib.quote_plus(df.filepath) if df.filepath else None
+
+            line = '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' % (isdir, df.filename, df.filesize, df.filepath, df.filemodified, df.fileperm, inserts+1, start, df.fileext, df.fileformat)
             f.write(line)
 
             inserts += 1
-            total_size += df.filesize if df.filesize != 4096 else 0
+            if df.filesize:
+                total_size += df.filesize if df.filesize != 4096 else 0
 
-            if not df.isdir:
+            if not df.isdir and '.' in df.filename:
                 filedistribution[df.fileformat] += 1
                 total_files += 1
 
@@ -180,8 +185,11 @@ class Postgres():
         Debug('Source %s - %s seconds for %s item INSERTS' % (source_name, str((end - start).total_seconds()),inserts), info=True)
 
         # Update the total size of the indexed Source
-        # Should be save from sqli as long as source_name is alphanummeric.
         sql = 'UPDATE sources SET total_size=%s where name=\'%s\';' % (total_size, source_name)
+        self._execute(sql)
+
+        # Update the total amount of files of the indexed source
+        sql = 'UPDATE sources SET total_files=%s where name=\'%s\';' % (total_files, source_name)
         self._execute(sql)
 
         # Update the distribution of files

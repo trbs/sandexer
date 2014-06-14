@@ -213,11 +213,22 @@
         var target = '#pie_filedistribution_container_{{source.name}}';
 
         var data = [
+            {% if source.filedistribution['documents'] %}
                 ['Documents', {{source.filedistribution['documents']}}],
+            {% endif %}
+            {% if source.filedistribution['movies'] %}
                 ['Video', {{source.filedistribution['movies']}}],
+            {% endif %}
+            {% if source.filedistribution['music'] %}
                 ['Music', {{source.filedistribution['music']}}],
+            {% endif %}
+            {% if source.filedistribution['pictures'] %}
                 ['Pictures', {{source.filedistribution['pictures']}}],
-                ['Other', {{source.filedistribution['files']}}]];
+            {% endif %}
+            {% if source.filedistribution['files'] %}
+                ['Other', {{source.filedistribution['files']}}]
+            {% endif %}
+        ];
 
         var piechart = chart_browse_pie_filedistribution_spawn(target, data, '{{source.name}}');
         piecharts.push(piechart);

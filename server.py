@@ -145,6 +145,7 @@ def browse_dir(path):
                 if f.isdir: continue
 
                 theme = 'blue'
+
                 if f.fileext in icons.additional_icons_exts:
                     icon = icons.additional_icons_exts[f.fileext]
                     icon = icons.additional_icons[icon]
@@ -303,20 +304,20 @@ def error404(error):
 #db.add_source('DebianCD', '')
 
 #
-from bin.urlparse import ParseUrl
-url = ParseUrl('http://cdimage.debian.org/debian-cd/7.5.0-live/amd64/')
-
-from datetime import datetime
-from bin.crawler import WebCrawl
-start = datetime.now()
-c = WebCrawl(cfg=cfg, db=db, name='DebianCD', url=url, ua='sandexer webcrawl - dsc - https://github.com/skftn/sandexer/', crawl_wait=float(0.1))
-aa = c.http()
-from bin.utils import Debug
-if isinstance(aa, Debug):
-    print aa.message
-else:
-    print 'Added: ' + str(aa)
-end = datetime.now()
+#from bin.urlparse import ParseUrl
+#url = ParseUrl('http://cdimage.debian.org/debian-cd/7.5.0-live/amd64/')
+#
+#from datetime import datetime
+#from bin.crawler import WebCrawl
+#start = datetime.now()
+#c = WebCrawl(cfg=cfg, db=db, name='DebianCD', url=url, ua='sandexer webcrawl - dsc - https://github.com/skftn/sandexer/', crawl_wait=float(0.1))
+#aa = c.http()
+#from bin.utils import Debug
+#if isinstance(aa, Debug):
+#    print aa.message
+#else:
+#    print 'Added: ' + str(aa)
+#end = datetime.now()
 #print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
 #
 #c = FtpCrawl(cfg, db, 'hoi', '192.168.178.30', 'ftpuser', 'sda')

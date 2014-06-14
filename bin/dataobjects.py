@@ -41,7 +41,10 @@ class Sources():
                 self._cfg.get('General', 'source_default_thumbnail')
 
             def calc_dist(inp):
-                return round(100 * round(inp) / source.total_files, 2)
+                if source.total_files:
+                    return round(100 * round(inp) / source.total_files, 2)
+                else:
+                    return 0
 
             distribution = {'files': calc_dist(source.filedistribution_files),
                             'documents': calc_dist(source.filedistribution_documents),
