@@ -11,6 +11,7 @@ import logging.handlers
 import functools, sys, operator
 
 from bin.bytes2human import bytes2human, human2bytes
+from bin.files import Icons
 from bin.config import Config
 from bin.db import Postgres
 from bin.dataobjects import Sources, DataObjectManipulation
@@ -60,6 +61,8 @@ Jinja2Template.settings = {
 
 api = Api(db, cfg)
 
+icons = Icons(cfg)
+
 def generate_navigation(admin):
     return [{'href': '/', 'caption': 'Home'},
             {'href': '/browse', 'caption': 'Browse'},
@@ -87,6 +90,7 @@ def generate_breadcrumps(path, dir=''):
 @view('index.html')
 def root():
     """Only authenticated users can see this"""
+    a = request
     aaa.require(fail_redirect='/login')
 
     message = 'Hi welcome to my site please don\'t fucking wreck shit kthx.'
@@ -107,7 +111,7 @@ def browse():
     return redirect('/browse/')
 
 @route('/browse/')
-@view('browse.html')
+@view('browse_complicated.html')
 def browse():
     """Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
@@ -130,13 +134,25 @@ def browse_dir(path):
     files = []
     spl = path.split('/')
     source_name = spl[0]
-    path =  '/'.join(spl[1:])
-    path = '/' + path
+    path =  '/' + '/'.join(spl[1:])
 
     for source in file_sources.list:
         if source.name == source_name:
             files = db.get_directory(source_name, path)
             files.sort(key=operator.attrgetter("filename"), reverse=False)
+
+            for f in files:
+                if f.isdir: continue
+
+                theme = 'blue'
+                if f.fileext in icons.additional_icons_exts:
+                    icon = icons.additional_icons_exts[f.fileext]
+                    icon = icons.additional_icons[icon]
+
+                    f.url_icon = '/static/icons/%s/128/' % theme + icon
+                else:
+                    f.url_icon = '/static/icons/%s' % theme  + icons.file_icons[f.fileformat]
+            break
 
     return {
         'title': 'Browse',
@@ -282,21 +298,25 @@ def error404(error):
         'title': 'Error'
     }
 
+#import bin.test3
+
+#db.add_source('DebianCD', '')
+
 #
 from bin.urlparse import ParseUrl
-#url = ParseUrl('http://wipkip.nikhef.nl/events/')
+url = ParseUrl('http://cdimage.debian.org/debian-cd/7.5.0-live/amd64/')
 
-#from datetime import datetime
-#from bin.crawler import WebCrawl
-#start = datetime.now()
-#c = WebCrawl(cfg=cfg, db=db, name='Zarya', url=url, ua='sandexer webcrawl - dsc - https://github.com/skftn/sandexer/')
-#aa = c.http()
-#from bin.utils import Debug
-#if isinstance(aa, Debug):
-#    print aa.message
-#else:
-#    print 'Added: ' + str(aa)
-#end = datetime.now()
+from datetime import datetime
+from bin.crawler import WebCrawl
+start = datetime.now()
+c = WebCrawl(cfg=cfg, db=db, name='DebianCD', url=url, ua='sandexer webcrawl - dsc - https://github.com/skftn/sandexer/', crawl_wait=float(0.1))
+aa = c.http()
+from bin.utils import Debug
+if isinstance(aa, Debug):
+    print aa.message
+else:
+    print 'Added: ' + str(aa)
+end = datetime.now()
 #print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
 #
 #c = FtpCrawl(cfg, db, 'hoi', '192.168.178.30', 'ftpuser', 'sda')

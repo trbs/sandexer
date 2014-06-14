@@ -6,6 +6,7 @@ from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 import requests
 import ftplib
 import dateutil.parser
+from bin.files import Fileformats
 from bytes2human import human2bytes
 from random import randrange
 from time import sleep
@@ -109,6 +110,7 @@ class WebCrawl():
     def parse_protoindex(self, protoindex):
         pi = protoindex.split('\n')
         data = []
+        ff = Fileformats(self._cfg)
 
         try:
             for line in pi[1:-2]:
@@ -121,6 +123,8 @@ class WebCrawl():
 
                 isdir = True if line.startswith('d') else False
                 filepath = '/'
+                fileformat = 0
+                ext = None
                 fileperm = int(spl[3])
                 filesize = int(spl[2])
 
@@ -130,9 +134,13 @@ class WebCrawl():
                 filepath = '/' + '/'.join(file_spl[:-1])
                 if not filepath.endswith('/'): filepath += '/'
 
+                if not isdir and '.' in filename:
+                    ext = filename.split('.')[-1].lower()
+                    fileformat = ff.get_fileformat(ext)
+
                 modified = datetime.fromtimestamp(float(spl[1]))
 
-                data.append(DiscoveredFile(self.name, filepath, filename, isdir, filesize, modified, fileperm))
+                data.append(DiscoveredFile(self.name, filepath, filename, isdir, filesize, modified, fileperm, fileformat, ext))
 
         except Exception as ex:
             return Debug(str(ex))
@@ -205,11 +213,17 @@ class WebCrawl():
     def walk_opendir(self):
         discovered_files = []
         dirs = ['']
+        bbbb = 0
 
         while dirs:
+            bbbb += 1
+            if bbbb > 3:
+                return discovered_files
+
             if self.crawl_wait:
                 # cut the source some slack
-                sleep(float(self.crawl_wait))
+                #sleep(float(self.crawl_wait))
+                pass
 
             # ignore certain directories
             if dirs[0] == 'CCC/pub/':

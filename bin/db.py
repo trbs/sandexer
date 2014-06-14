@@ -45,12 +45,23 @@ class Postgres():
                   crawl_authtype text,
                   crawl_url text,
                   crawl_interval bigint,
-                  crawl_useragent text NOT NULL,
+                  crawl_useragent text,
                   crawl_verifyssl boolean NOT NULL DEFAULT false,
                   crawl_lastcrawl timestamp without time zone,
                   bandwidth text,
                   color integer,
-                  filetypes integer[] NOT NULL -- 0: Random files...
+                  filetypes integer[] NOT NULL, -- 0: Random files...
+                  sources_id serial NOT NULL,
+                  description text,
+                  total_size bigint,
+                  total_files bigint,
+                  thumbnail_url text,
+                  country text,
+                  filedistribution_files integer,
+                  filedistribution_documents integer,
+                  filedistribution_movies integer,
+                  filedistribution_music integer,
+                  filedistribution_pictures integer,
                 )
                 WITH (
                   OIDS=FALSE
@@ -66,12 +77,24 @@ class Postgres():
             ''' % self._cfg.get('Postgres', 'db'))
 
     def fetch_sources(self):
-        sql = 'SELECT * from sources'
+        select_sql = 'SELECT * from sources'
+        column_sql = 'select column_name from information_schema.columns where table_name=\'sources\';'
+
+        select_results = []
+        column_results = []
 
         try:
-            return self._pool.fetchall(sql)
+            select_results = self._pool.fetchall(select_sql)
         except:
             return Debug('Could not fetch table sources')
+
+        try:
+            column_results = [''.join(z) for z in self._pool.fetchall(column_sql)]
+        except:
+            return Debug('Could not fetch table names')
+
+        return {'columns': column_results[::-1],
+                'results': select_results}
 
     def add_source(self, source_name, opts):
         sql = 'SELECT name FROM sources WHERE name=\'%s\'' % source_name
@@ -98,7 +121,8 @@ class Postgres():
               fileperm integer,
               id serial primary key,
               fileadded timestamp without time zone NOT NULL,
-              thumbnail_url text
+              fileext text,
+              fileformat integer NOT NULL DEFAULT 0
             )
             WITH (
               OIDS=FALSE
@@ -128,16 +152,19 @@ class Postgres():
         inserts = 0
         total_size = 0
         total_files = 0
+        filedistribution = [0, 0, 0, 0, 0]
 
         for df in discovered_files:
             isdir = str(df.isdir).upper()
 
-            line = '%s|%s|%s|%s|%s|%s|%s|%s\n' % (isdir, urllib.quote_plus(df.filename), df.filesize, urllib.quote_plus(df.filepath), df.filemodified, df.fileperm, inserts+1, start)
+            line = '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' % (isdir, urllib.quote_plus(df.filename), df.filesize, urllib.quote_plus(df.filepath), df.filemodified, df.fileperm, inserts+1, start, df.fileext, df.fileformat)
             f.write(line)
 
             inserts += 1
             total_size += df.filesize if df.filesize != 4096 else 0
+
             if not df.isdir:
+                filedistribution[df.fileformat] += 1
                 total_files += 1
 
         f.close()
@@ -157,6 +184,24 @@ class Postgres():
         sql = 'UPDATE sources SET total_size=%s where name=\'%s\';' % (total_size, source_name)
         self._execute(sql)
 
+        # Update the distribution of files
+        sql = '''
+                UPDATE sources SET (
+                    filedistribution_files,
+                    filedistribution_documents,
+                    filedistribution_movies,
+                    filedistribution_music,
+                    filedistribution_pictures) =
+                (%s, %s, %s, %s, %s) where name=\'%s\';
+                ''' % (filedistribution[0],
+                       filedistribution[1],
+                       filedistribution[2],
+                       filedistribution[3],
+                       filedistribution[4],
+                       source_name)
+
+        self._execute(sql)
+
         # Update the last crawled time
         # Should be save from sqli as long as source_name is alphanummeric
         sql = 'UPDATE sources SET crawl_lastcrawl=\'%s\' WHERE name=\'%s\';' % (start, source_name)
@@ -171,7 +216,18 @@ class Postgres():
         results = self._pool.fetchall(sql, [urllib.quote_plus(path)])
 
         for r in results:
-            df = DiscoveredFile(source_name, r[3], r[1], r[0], r[2], r[4], r[5])
+            df = DiscoveredFile(
+                host_name=source_name,
+                path=r[3],
+                name=r[1],
+                isdir=r[0],
+                size=r[2],
+                modified=r[4],
+                perm=r[5],
+                fileformat=r[9],
+                fileext=r[8],
+                fileadded=r[7]
+            )
             dom = DataObjectManipulation()
             df = dom.humanize(df, humansizes=True, humandates=True, humanfile=True, humanpath=True)
             data.append(df)

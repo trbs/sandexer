@@ -2,12 +2,13 @@ from datetime import datetime
 
 from bin.utils import isInt
 from bin.utils import Debug
+import math
 from urllib import quote_plus, unquote_plus
 from bytes2human import human2bytes, bytes2human
 
 
 class DiscoveredFile():
-    def __init__(self, host_name, path, name, isdir, size=None, modified=None, perm=None):
+    def __init__(self, host_name, path, name, isdir, size=None, modified=None, perm=None, fileformat=None, fileext=None, fileadded=None):
         self.host_name = host_name
         self.filepath = path
         self.filename = name
@@ -15,6 +16,10 @@ class DiscoveredFile():
         self.isdir = isdir
         self.filemodified = modified
         self.fileperm = int(perm) if isInt(perm) else perm
+        self.fileformat = fileformat
+        self.fileext = fileext
+        self.fileadded = fileadded
+        self.url_icon = None
 
 class Sources():
     def __init__(self, db, cfg):
@@ -23,29 +28,28 @@ class Sources():
         self._cfg = cfg
 
     def get_sources(self):
+        self.list = []
         results = self._db.fetch_sources()
 
-        for r in results:
+        for r in results['results']:
             source = Source()
 
-            source.name = r[0]
-            source.added = r[1]
-            source.crawl_protocol = r[2]
-            source.crawl_username = r[3]
-            source.crawl_password = r[4]
-            source.crawl_authtype = r[5]
-            source.crawl_url = r[6]
-            source.crawl_interval = r[7]
-            source.crawl_useragent = r[8]
-            source.crawl_verifyssl = r[9]
-            source.crawl_lastcrawl = r[10]
-            source.bandwidth = r[11]
-            source.color = r[12]
-            source.filetypes = r[13]
-            source.description = r[15]
-            source.total_size = r[16]
-            source.total_files = r[17]
-            source.thumbnail_url = r[18] if r[18] else self._cfg.get('General', 'source_default_thumbnail')
+            for i in range(0, len(r)):
+                setattr(source, results['columns'][i], r[i])
+
+            if not source.thumbnail_url:
+                self._cfg.get('General', 'source_default_thumbnail')
+
+            def calc_dist(inp):
+                return round(100 * round(inp) / source.total_files, 2)
+
+            distribution = {'files': calc_dist(source.filedistribution_files),
+                            'documents': calc_dist(source.filedistribution_documents),
+                            'movies': calc_dist(source.filedistribution_movies),
+                            'music': calc_dist(source.filedistribution_music),
+                            'pictures': calc_dist(source.filedistribution_pictures)
+             }
+            source.filedistribution = distribution
 
             self.list.append(source)
 
@@ -70,6 +74,13 @@ class Source():
         self.total_size = 0
         self.total_files = 0
         self.thumbnail_url = None
+        self.country = None
+        self.filedistribution_files = None
+        self.filedistribution_documents = None
+        self.filedistribution_movies = None
+        self.filedistribution_music = None
+        self.filedistribution_pictures = None
+        self.filedistribution = None
 
 
 class DataObjectManipulation():

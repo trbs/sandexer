@@ -73,3 +73,55 @@ function check_form(show_errors){
         if(show_alerts) $('#errorbox').html(errorBox(warnings));
     }
 }
+
+function chart_browse_pie_filedistribution_spawn(target, data, source_name) {
+    var c = $(target).highcharts({
+        chart: {
+            plotBackgroundColor: null,
+            plotBorderWidth: 0,
+            plotShadow: false,
+            margin: [0, 0, 0, 0],
+            spacingTop: 0,
+            spacingBottom: 0,
+            spacingLeft: 0,
+            spacingRight: 0,
+            reflow: false
+        },
+        title: {
+            text: 'File Distribution',
+            align: 'center',
+            verticalAlign: 'middle',
+            y: -116
+        },
+        tooltip: {
+            pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+        },
+        plotOptions: {
+            pie: {
+                size: '100%',
+                dataLabels: {
+                    enabled: true,
+                    distance: -40,
+                    style: {
+                        fontWeight: 'bold',
+                        color: 'white',
+                        textShadow: '0px 1px 2px black'
+                    }
+                },
+                startAngle: -90,
+                endAngle: 90,
+                center: ['50%', '58%']
+            }
+        },
+        credits: {
+            enabled: false
+        },
+        series: [{
+            type: 'pie',
+            name: source_name,
+            innerSize: '0%',
+            data: data
+        }]
+    });
+    return c;
+}

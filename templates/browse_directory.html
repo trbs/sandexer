@@ -27,6 +27,14 @@
     a:hover{
         text-decoration: none;
     }
+    img.fileicon{
+        width:32px;
+        height:32px;
+    }
+    div.filethumbnail{
+        margin-top:6px;
+        margin-bottom:6px;
+    }
 </style>
 
 <div style="height:10px;"></div>
@@ -64,7 +72,15 @@
                 <tr>
                     <td class="rowlink-skip" style="background-color:white;">
                         <div id="{{f.filename}}" class="filethumbnail">
-                            <img src="http://icons.iconarchive.com/icons/visualpharm/icons8-metro-style/512/Very-Basic-File-icon.png" width=16px height=16px/>
+                            {% if f.isdir %}
+                                <img  class="fileicon" src="/static/icons/blue/128/Very_Basic/folder-128.png">
+                            {% else %}
+                                {% if f.url_icon %}
+                                    <img  class="fileicon" src="{{f.url_icon}}"/>
+                                {% else %}
+                                    <img  class="fileicon" src="/static/icons/blue/128/Very_Basic/file-128.png"/>
+                                {% endif %}
+                            {% endif %}
                             <div style="height: 2px;"></div>
                         </div>
                     </td>

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    hr {
+        -moz-border-bottom-colors: none;
+        -moz-border-image: none;
+        -moz-border-left-colors: none;
+        -moz-border-right-colors: none;
+        -moz-border-top-colors: none;
+        border-top: 1px solid #d5d5d5;
+        border-style: solid none;
+        margin:4px 0;
+    }
+    h2{
+        font-family:sans-serif;
+    }
+    h3{
+        margin-bottom:2px;
+    }
+    div.sources_container{
+        margin-left:20px;
+        width: 800px;
+        margin:0 auto;
+    }
+    div.source_container{
+        padding-left: 10px;
+        padding-right: 10px;
+        width:800px;
+        margin-bottom:40px;
+    }
+    div.source_thumbnail{
+        float:left;
+        min-height:48px;
+    }
+    img.source_thumbnail{
+        margin-top:4px;
+        width:48px;
+        height:48px;
+    }
+    div.source_header_text{
+        float: left;
+        min-height:48px;
+        width:690px;
+        margin-left:8px;
+        color: #444;
+    }
+    div.source_header_info{
+        overflow:hidden;
+        height:28px;
+        font-size:18px;
+        float: left;
+        padding-top:6px;
+
+        font-family: Arial, Verdana, Tahoma, sans-serif, serif;
+        color: #444;
+    }
+    div.source_header_info_item{
+        margin-left:16px;
+        float:left;
+    }
+    span.source_header_info_val{
+        color: #428bca;
+        font-size: 16px;
+        font-weight: bold;
+    }
+    div.source_content_container{
+        overflow: hidden;
+        margin-top:20px;
+    }
+    div.formatgraph{
+        padding-top:-50px;
+        width:260px;
+        height:260px;
+        float:left;
+    }
+    div.source_content{
+        float:left;
+        margin-left: 40px;
+        width: 480px;
+    }
+    td{
+        font-size:13px;
+    }
+    .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+        padding: 8px;
+        line-height: 1;
+        vertical-align: top;
+        border-top: 1px solid #d5d5d5;
+    }
+    .btn-blue {
+        color: #FFFFFF;
+        background-color: #428BCA;
+        border-color: #FFFFFF;
+    }
+
+    .btn-blue:hover,
+    .btn-blue:focus,
+    .btn-blue:active,
+    .btn-blue.active,
+    .open .dropdown-toggle.btn-blue {
+        color: #FFFFFF;
+        background-color: #62A7E3;
+        border-color: #FFFFFF;
+    }
+
+    .btn-blue:active,
+    .btn-blue.active,
+    .open .dropdown-toggle.btn-blue {
+        background-image: none;
+    }
+
+    .btn-blue.disabled,
+    .btn-blue[disabled],
+    fieldset[disabled] .btn-blue,
+    .btn-blue.disabled:hover,
+    .btn-blue[disabled]:hover,
+    fieldset[disabled] .btn-blue:hover,
+    .btn-blue.disabled:focus,
+    .btn-blue[disabled]:focus,
+    fieldset[disabled] .btn-blue:focus,
+    .btn-blue.disabled:active,
+    .btn-blue[disabled]:active,
+    fieldset[disabled] .btn-blue:active,
+    .btn-blue.disabled.active,
+    .btn-blue[disabled].active,
+    fieldset[disabled] .btn-blue.active {
+        background-color: #428BCA;
+        border-color: #FFFFFF;
+    }
+
+    .btn-blue .badge {
+        color: #428BCA;
+        background-color: #FFFFFF;
+    }
+</style>
+
+<script>
+    Highcharts.setOptions({
+        colors: ['#428bca', '#999', '#428bca', '#999', '#428bca']
+    });
+
+    var piecharts = [];
+
+    function fixHighchartsPieScale(target){ $(target).css('height','160px'); }
+</script>
+
+<div style="height: 40px;"></div>
+
+<div class="sources_container">
+    {% for source in sources %}
+        <div class="source_container">
+            <div style="overflow:hidden;min-height:48px;">
+                <div class="source_thumbnail">
+                    <img class="source_thumbnail" src="{{source.thumbnail_url}}"/>
+                </div>
+                <div class="source_header_text">
+                    <span style="font-size:24px;">{{source.name}} </span>
+                    {% if source.country %}
+                        <img src="http://cdn.quakelive.com/web/2011071903/images/flags/nl_v2011071903.0.gif"/>
+                    {% endif %}
+                    <br>
+                    <span>{{source.description}}</span>
+                </div>
+                <center>
+                    <div class="source_header_info">
+                        <div class="source_header_info_item" style="margin-left:0px;">
+                            Total Size: <span class="source_header_info_val">{{source.total_size}}</span>
+                        </div>
+                        <div class="source_header_info_item">
+                            Speed: <span class="source_header_info_val">{{source.bandwidth}}<small>mbit</small></span>
+                        </div>
+                        <div class="source_header_info_item">
+                            Updated: <span class="source_header_info_val">1 day ago</span>
+                        </div>
+                        <div class="source_header_info_item">
+                            Protocol: <span class="source_header_info_val">{{source.crawl_protocol}}</span>
+                        </div>
+                        <div class="source_header_info_item">
+                            Location: <span class="source_header_info_val">{{source.country}}</span>
+                        </div>
+                    </div>
+                </center>
+            </div>
+            <hr>
+            <div class="source_content_container">
+                <div id="pie_filedistribution_container_{{source.name}}" class="formatgraph">
+
+                </div>
+                <div class="source_content">
+                    <table id="source" class="table table-bordered table-striped" style="clear: both;margin-top:-4px;">
+                        <tbody>
+                        <tr>
+                            <td width="25%"><b>Location</b></td>
+                            <td width="80%">{{source.crawl_url}}</td>
+                        </tr>
+                        <tr>
+                            <td width="20%"><b>Number of files</b></td>
+                            <td width="80%">{{source.total_files}}</td>
+                        </tr>
+                        <tr>
+                            <td width="20%"><b>Authentication</b></td>
+                            <td width="80%">{{source.crawl_authtype}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <a style="float:right;" href="{{source.name}}/" class="btn btn-blue"><i class="icon-white icon-share-alt"></i> Browse this source</a>
+                </div>
+            </div>
+        </div>
+
+    <script>
+        var target = '#pie_filedistribution_container_{{source.name}}';
+
+        var data = [
+                ['Documents', {{source.filedistribution['documents']}}],
+                ['Video', {{source.filedistribution['movies']}}],
+                ['Music', {{source.filedistribution['music']}}],
+                ['Pictures', {{source.filedistribution['pictures']}}],
+                ['Other', {{source.filedistribution['files']}}]];
+
+        var piechart = chart_browse_pie_filedistribution_spawn(target, data, '{{source.name}}');
+        piecharts.push(piechart);
+
+        $(target).css('height','160px');
+    </script>
+    {% endfor %}
+</div>
+
+
+
+<script>
+    $(window).bind('resize', function(){
+
+    });
+
+    $('.source_container').hover(function(){
+
+    });
+</script>
+
+{% endblock %}
