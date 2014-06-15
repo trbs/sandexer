@@ -6,6 +6,8 @@ Lightweight in the sense that it runs fine on suboptimal hardware, sandexer is d
 
 This application is still early in development and thus not functional yet.
 
+![bla](http://imgur.com/cdRb50V.png)
+
 Status: pre-alpha
 
 Installation

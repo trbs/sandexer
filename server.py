@@ -124,7 +124,7 @@ def browse():
 
     return {
         'title': 'Browse',
-        'sources': sources,
+        'sources': [z for z in sources if z.name != 'Zarya'],
         'navigation': generate_navigation(admin)
     }
 
