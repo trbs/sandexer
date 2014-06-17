@@ -62,7 +62,7 @@
 
             {% if path != '/' %}
                 {% if load_time %}
-                    <div class="alert alert-info">Database: {{load_time}} sec</div>
+                    <div class="alert alert-info">Page load: {{load_time}} sec</div>
                 {% endif %}
             {% endif %}
 
@@ -87,15 +87,7 @@
                 <tr>
                     <td class="rowlink-skip" style="background-color:white;">
                         <div id="{{f.filename}}" class="filethumbnail">
-                            {% if f.isdir %}
-                                <img  class="fileicon" src="/static/icons/blue/128/Very_Basic/folder-128.png">
-                            {% else %}
-                                {% if f.url_icon %}
-                                    <img  class="fileicon" src="{{f.url_icon}}"/>
-                                {% else %}
-                                    <img  class="fileicon" src="/static/icons/blue/128/Very_Basic/file-128.png"/>
-                                {% endif %}
-                            {% endif %}
+                            <img class="fileicon" src="{{f.url_icon}}"/>
                             <div style="height: 2px;"></div>
                         </div>
                     </td>

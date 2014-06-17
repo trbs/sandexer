@@ -177,115 +177,118 @@
 </script>
 
 <div style="height: 20px;"></div>
-
 <div class="sources_container">
+    {% if sources %}
     <div class="sources_display_options">
         <div style="float:right">
             <button id="btn_view_tags" class="btn btn-default btn-primary btn-xs"><span class="glyphicon glyphicon-th"></span> Show tags</button>
             <button id="btn_view_detailed" class="btn btn-default btn-primary btn-xs"><span class="glyphicon glyphicon-th"></span> Show details</button>
         </div>
     </div>
-    {% for source in sources %}
-        <div class="source_container">
-            <div id="{{source.name}}/" class="source_header">
-                <div id="header_animate_{{source.name}}" class="source_thumbnail_and_text">
-                    <div class="source_thumbnail">
-                        <img class="source_thumbnail" src="{{source.thumbnail_url}}"/>
+        {% for source in sources %}
+            <div class="source_container">
+                <div id="{{source.name}}" class="source_header">
+                    <div id="header_animate_{{source.name}}" class="source_thumbnail_and_text">
+                        <div class="source_thumbnail">
+                            <img class="source_thumbnail" src="{{source.thumbnail_url}}"/>
+                        </div>
+                        <div class="source_header_text">
+                            <span id="header_{{source.name}}" style="font-size:24px;">{{source.name}}</span>
+                            {% if source.country %}
+                                <img src="http://cdn.quakelive.com/web/2011071903/images/flags/nl_v2011071903.0.gif"/>
+                            {% endif %}
+                            <br>
+                            <span>{{source.description}}</span>
+                        </div>
                     </div>
-                    <div class="source_header_text">
-                        <span style="font-size:24px;">{{source.name}} </span>
-                        {% if source.country %}
-                            <img src="http://cdn.quakelive.com/web/2011071903/images/flags/nl_v2011071903.0.gif"/>
-                        {% endif %}
-                        <br>
-                        <span>{{source.description}}</span>
-                    </div>
+                    <center>
+                        <div class="source_header_info">
+                            <div class="source_header_info_item" style="margin-left:0px;">
+                                Total Size: <span class="source_header_info_val">{{source.total_size}}</span>
+                            </div>
+                            <div class="source_header_info_item">
+                                Speed: <span class="source_header_info_val">{{source.bandwidth}}<small>mbit</small></span>
+                            </div>
+                            <div class="source_header_info_item">
+                                Updated: <span class="source_header_info_val">1 day ago</span>
+                            </div>
+                            <div class="source_header_info_item">
+                                Protocol: <span class="source_header_info_val">{{source.crawl_protocol}}</span>
+                            </div>
+                            <div class="source_header_info_item">
+                                Location: <span class="source_header_info_val">{{source.country}}</span>
+                            </div>
+                        </div>
+                    </center>
                 </div>
-                <center>
-                    <div class="source_header_info">
-                        <div class="source_header_info_item" style="margin-left:0px;">
-                            Total Size: <span class="source_header_info_val">{{source.total_size}}</span>
-                        </div>
-                        <div class="source_header_info_item">
-                            Speed: <span class="source_header_info_val">{{source.bandwidth}}<small>mbit</small></span>
-                        </div>
-                        <div class="source_header_info_item">
-                            Updated: <span class="source_header_info_val">1 day ago</span>
-                        </div>
-                        <div class="source_header_info_item">
-                            Protocol: <span class="source_header_info_val">{{source.crawl_protocol}}</span>
-                        </div>
-                        <div class="source_header_info_item">
-                            Location: <span class="source_header_info_val">{{source.country}}</span>
-                        </div>
-                    </div>
-                </center>
-            </div>
-            <hr>
-            <div id="detailed_view_content" class="source_content_container">
-                <div id="pie_filedistribution_container_{{source.name}}" class="formatgraph">
+                <hr>
+                <div id="detailed_view_content" class="source_content_container">
+                    <div id="pie_filedistribution_container_{{source.name}}" class="formatgraph">
 
+                    </div>
+                    <div class="source_content">
+                        <table id="source" class="table table-bordered table-striped" style="clear: both;margin-top:-4px;">
+                            <tbody>
+                            <tr>
+                                <td width="25%"><b>Location</b></td>
+                                <td width="80%">{{source.crawl_url}}</td>
+                            </tr>
+                            <tr>
+                                <td width="20%"><b>Number of files</b></td>
+                                <td width="80%">{{source.total_files}}</td>
+                            </tr>
+                            <tr>
+                                <td width="20%"><b>Authentication</b></td>
+                                <td width="80%">{{source.crawl_authtype}}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <a style="float:right;" href="{{source.name}}/" class="btn btn-blue"><i class="icon-white icon-share-alt"></i> Browse this source</a>
+                    </div>
                 </div>
-                <div class="source_content">
-                    <table id="source" class="table table-bordered table-striped" style="clear: both;margin-top:-4px;">
-                        <tbody>
-                        <tr>
-                            <td width="25%"><b>Location</b></td>
-                            <td width="80%">{{source.crawl_url}}</td>
-                        </tr>
-                        <tr>
-                            <td width="20%"><b>Number of files</b></td>
-                            <td width="80%">{{source.total_files}}</td>
-                        </tr>
-                        <tr>
-                            <td width="20%"><b>Authentication</b></td>
-                            <td width="80%">{{source.crawl_authtype}}</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                    <a style="float:right;" href="{{source.name}}/" class="btn btn-blue"><i class="icon-white icon-share-alt"></i> Browse this source</a>
+                <hr class="border-bottom">
+                <div class="tags_container">
+                    Tags:
+                    {% if source.tags %}
+                        {% for tag in source.tags %}
+                            <a href="?tag={{tag}}" class="tags_value">{{tag}}</a>
+                        {% endfor %}
+                    {% else %}
+                        <b>None</b>
+                    {% endif %}
                 </div>
             </div>
-            <hr class="border-bottom">
-            <div class="tags_container">
-                Tags:
-                {% if source.tags %}
-                    {% for tag in source.tags %}
-                        <a href="?tag={{tag}}" class="tags_value">{{tag}}</a>
-                    {% endfor %}
-                {% else %}
-                    <b>None</b>
+
+        <script>
+            var target = '#pie_filedistribution_container_{{source.name}}';
+
+            var data = [
+                {% if source.filedistribution['documents'] %}
+                    ['Documents', {{source.filedistribution['documents']}}],
                 {% endif %}
-            </div>
-        </div>
+                {% if source.filedistribution['movies'] %}
+                    ['Video', {{source.filedistribution['movies']}}],
+                {% endif %}
+                {% if source.filedistribution['music'] %}
+                    ['Music', {{source.filedistribution['music']}}],
+                {% endif %}
+                {% if source.filedistribution['pictures'] %}
+                    ['Pictures', {{source.filedistribution['pictures']}}],
+                {% endif %}
+                {% if source.filedistribution['files'] %}
+                    ['Other', {{source.filedistribution['files']}}]
+                {% endif %}
+            ];
 
-    <script>
-        var target = '#pie_filedistribution_container_{{source.name}}';
+            var piechart = chart_browse_pie_filedistribution_spawn(target, data, '{{source.name}}');
+            piecharts.push(piechart);
 
-        var data = [
-            {% if source.filedistribution['documents'] %}
-                ['Documents', {{source.filedistribution['documents']}}],
-            {% endif %}
-            {% if source.filedistribution['movies'] %}
-                ['Video', {{source.filedistribution['movies']}}],
-            {% endif %}
-            {% if source.filedistribution['music'] %}
-                ['Music', {{source.filedistribution['music']}}],
-            {% endif %}
-            {% if source.filedistribution['pictures'] %}
-                ['Pictures', {{source.filedistribution['pictures']}}],
-            {% endif %}
-            {% if source.filedistribution['files'] %}
-                ['Other', {{source.filedistribution['files']}}]
-            {% endif %}
-        ];
-
-        var piechart = chart_browse_pie_filedistribution_spawn(target, data, '{{source.name}}');
-        piecharts.push(piechart);
-
-        $(target).css('height','160px');
-    </script>
-    {% endfor %}
+            $(target).css('height','160px');
+        </script>
+        {% endfor %}
+    {% else %}
+        no sources added yet.
+    {% endif %}
 </div>
 
 
@@ -300,21 +303,27 @@
     $('.source_header').click(
             function(){
                 if (!display_show_details){
-                    var uri = $(this).attr('id');
+                    var uri = $(this).attr('id') + '/';
                     window.location.href = uri;
                 }
             }
     );
 
     $('.source_header').hover(function(){
+        var id = $(this).attr('id');
         if(!display_show_details){
-            $(this).css('background-color', '#e1e1e1');
+            //$(this).css('background-color', '#e1e1e1');
+            console.log('#header_' + id);
+            $('#header_' + id).css('text-decoration', 'underline');
         }
         else{
-            $(this).css('background-color', 'transparent');
+            $('#header_' + id).css('text-decoration', 'none');
+            //$(this).css('background-color', 'transparent');
         }
     }, function(){
-        $(this).css('background-color', 'transparent');
+        var id = $(this).attr('id');
+        //$(this).css('background-color', 'transparent');
+        $('#header_' + id).css('text-decoration', 'none');
     });
 
 //    $('.source_header').hover(function(){

@@ -128,3 +128,35 @@ class DataObjectManipulation():
                         setattr(dataobject, attr, unquote_plus(get_attr))
 
         return dataobject
+
+def UrlVarParse(query):
+    parsed = {}
+
+    for key,val in query.iteritems():
+        if val.startswith('[') and val.endswith(']'):
+            val = val[1:-1]
+
+            if ',' in val:
+                val = [z for z in val.split(',') if z]
+            else:
+                val = [val] if val else None
+
+            if val:
+                newval = []
+
+                for v in val:
+                    if '=' in v:
+                        spl = v.split('=')
+
+                        if len(spl) == 2 and spl[0] and spl[1]:
+                            newval.append({spl[0]: spl[1]})
+                            continue
+                        else:
+                            continue
+
+                    newval.append(v)
+                parsed[key] = newval
+
+
+
+    return parsed

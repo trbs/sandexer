@@ -15,7 +15,7 @@ from bin.bytes2human import bytes2human, human2bytes
 from bin.files import Icons
 from bin.config import Config
 from bin.db import Postgres
-from bin.dataobjects import Sources, DataObjectManipulation
+from bin.dataobjects import Sources, DataObjectManipulation, UrlVarParse
 from bin.utils import Debug
 from bin.api import Api
 
@@ -66,7 +66,7 @@ icons = Icons(cfg)
 
 def generate_navigation(admin):
     return [{'href': '/', 'caption': 'Home'},
-            {'href': '/browse', 'caption': 'Browse'},
+            {'href': '/browse/', 'caption': 'Browse'},
             {'href': '/search', 'caption': 'Search'},
             {'href': '/logout', 'caption': 'Logout'},
             {'href': '/admin', 'caption': 'Admin'} if admin else None]
@@ -103,22 +103,56 @@ def root():
         'welcome_message': message
     }
 
-@route('/browse')
-@view('browse.html')
+@route('/browse/')
 def browse():
     """Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
 
-    return redirect('/browse/')
+    return redirect('/browse?sort=[size=desc]')
 
-@route('/browse/')
+import bin.test3
+
+@route('/browse')
 @view('browse_complicated.html')
 def browse():
-    """Only authenticated users can see this"""
+    sort = None
+    sort_options = {
+        'size': 'total_size',
+        'name': 'name',
+        'country': 'country',
+        'files': 'total_files',
+        'bandwidth': 'bandwidth',
+        'added': 'added'
+    }
+    do_sort = []
+
+    query = UrlVarParse(request.query)
+
+    if 'sort' in query:
+        sort = query['sort']
+        for s in sort:
+            sort_key = None
+            sort_val = False
+            if isinstance(s, str):
+                sort_key = s
+            elif isinstance(s, dict):
+                sort_key = s.iterkeys().next()
+                sort_val = s.itervalues().next()
+
+            if sort_key in sort_options and sort_key:
+                do_sort = [sort_options[sort_key], sort_val]
+
+    #"""Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
 
     sources = file_sources.list
-    sources = sorted(sources, key=lambda k: random.random())
+
+    if do_sort:
+        sources = sorted(sources, key=lambda k: k.__dict__[do_sort[0]])
+
+        if do_sort[1] == 'desc':
+            sources = sources[::-1]
+
     for source in sources:
         dom = DataObjectManipulation()
         source = dom.humanize(source, humandates=True, dateformat='%d/%m/%Y %H:%M', humansizes=True)
@@ -141,6 +175,9 @@ def browse_dir(path):
     filepath =  '/' + '/'.join(spl[1:-1])
     filename = ''
     isdir = False
+
+    theme = 'blue'
+    theme_path = '/static/icons/%s/128/' % theme
 
     if path.endswith('/'):
         isdir = True
@@ -165,17 +202,20 @@ def browse_dir(path):
             files.sort(key=operator.attrgetter("filename"), reverse=False)
 
             for f in files:
-                if f.isdir: continue
-
-                theme = 'blue'
+                if f.isdir:
+                    if f.filename == '..':
+                        f.url_icon = theme_path + icons.additional_icons[20]
+                    else:
+                        f.url_icon = theme_path + icons.additional_icons[21]
+                    continue
 
                 if f.fileext in icons.additional_icons_exts:
                     icon = icons.additional_icons_exts[f.fileext]
                     icon = icons.additional_icons[icon]
 
-                    f.url_icon = '/static/icons/%s/128/' % theme + icon
+                    f.url_icon = theme_path + icon
                 else:
-                    f.url_icon = '/static/icons/%s' % theme  + icons.file_icons[f.fileformat]
+                    f.url_icon = theme_path + icons.file_icons[f.fileformat]
             source = s
             break
     load_time = (datetime.now() - start_time).total_seconds()

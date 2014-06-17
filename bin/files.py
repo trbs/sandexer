@@ -49,13 +49,12 @@ class Icons():
     def __init__(self, cfg):
         self._cfg = cfg
 
-        self.path = '/128/'
         self.file_icons = {
-            0: '%sVery_Basic/file-128.png' % self.path,
-            1: '%sVery_Basic/document-128.png' % self.path,
-            2: '%sPhoto_Video/film-128.png' % self.path,
-            3: '%sVery_Basic/music-128.png' % self.path,
-            4: '%sVery_Basic/slr_camera-128.png' % self.path
+            0: 'Very_Basic/file-128.png' ,
+            1: 'Very_Basic/document-128.png',
+            2: 'Photo_Video/film-128.png' ,
+            3: 'Very_Basic/music-128.png' ,
+            4: 'Very_Basic/picture-128.png'
         }
 
         self.additional_icons = [
@@ -78,7 +77,9 @@ class Icons():
             'Computer_Hardware/cd-128.png', #16 cd, image files
             'Very_Basic/download-128.png', #17 download icon
             'Computer_Hardware/burn_cd-128.png', #18 iso, dmg, etc
-            'Industry/trash-128.png' # 19, trash bin
+            'Industry/trash-128.png', # 19, trash bin
+            'Very_Basic/folder_back-128.png', # 20 folder move back
+            'Very_Basic/folder-128.png' #21
             ]
 
         self.additional_icons_exts = {

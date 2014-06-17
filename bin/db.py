@@ -219,7 +219,6 @@ class Postgres():
         self._execute(sql)
 
     def get_file(self, source_name, filepath, filename):
-
         path = urllib.quote_plus(filepath)
         filename = urllib.quote_plus(filename)
         sql = 'SELECT * FROM \"files_%s\" WHERE filepath = ' % source_name
@@ -237,8 +236,11 @@ class Postgres():
         results = self._pool.fetchall(sql, [urllib.quote_plus(path)])
 
         for r in results:
+            if r[1] == '' or r[1] == None:
+                continue
+
             filename=unicode(r[1], 'utf8')
-            filepath=unicode(r[3], 'utf8')
+            filepath=unicode(r[3], 'utf8') if r[3] else None
 
             df = DiscoveredFile(
                 host_name=source_name,
@@ -255,6 +257,9 @@ class Postgres():
             dom = DataObjectManipulation()
             df = dom.humanize(df, humansizes=True, humandates=True, humanfile=True, humanpath=True)
             data.append(df)
+
+
+        data.insert(0, DiscoveredFile(source_name, '../', '..', isdir=True, modified='', perm='', size=''))
 
         return data
 
