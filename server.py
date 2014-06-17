@@ -124,7 +124,6 @@ def browse():
         'bandwidth': 'bandwidth',
         'added': 'added'
     }
-    do_sort = []
 
     query = UrlVarParse(request.query)
 
@@ -140,17 +139,20 @@ def browse():
                 sort_val = s.itervalues().next()
 
             if sort_key in sort_options and sort_key:
-                do_sort = [sort_options[sort_key], sort_val]
+                sort = {'key': sort_options[sort_key],
+                        'val': sort_val}
+            else:
+                sort = None
 
     #"""Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
 
     sources = file_sources.list
 
-    if do_sort:
-        sources = sorted(sources, key=lambda k: k.__dict__[do_sort[0]])
+    if sort:
+        sources = sorted(sources, key=lambda k: k.__dict__[sort['key']])
 
-        if do_sort[1] == 'desc':
+        if sort['val'] == 'desc':
             sources = sources[::-1]
 
     for source in sources:
