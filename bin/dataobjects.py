@@ -122,7 +122,7 @@ class DataObjectManipulation():
             if humanpath or humanfile:
                 get_attr = getattr(dataobject, attr)
 
-                if isinstance(get_attr, str):
+                if isinstance(get_attr, str) or isinstance(get_attr, unicode):
                     tokens = ['filepath', 'filename']
                     if attr in tokens:
                         setattr(dataobject, attr, unquote_plus(get_attr))

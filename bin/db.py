@@ -237,10 +237,13 @@ class Postgres():
         results = self._pool.fetchall(sql, [urllib.quote_plus(path)])
 
         for r in results:
+            filename=unicode(r[1], 'utf8')
+            filepath=unicode(r[3], 'utf8')
+
             df = DiscoveredFile(
                 host_name=source_name,
-                path=r[3],
-                name=r[1],
+                path=filepath,
+                name=filename,
                 isdir=r[0],
                 size=r[2],
                 modified=r[4],
