@@ -35,6 +35,9 @@
         margin-top:6px;
         margin-bottom:6px;
     }
+    .breadcrumb {
+        margin-bottom:10px;
+    }
 </style>
 
 <div style="height:10px;"></div>
@@ -56,6 +59,18 @@
                     {% endif %}
                 {% endfor %}
             </ol>
+
+            {% if path != '/' %}
+                {% if load_time %}
+                    <div class="alert alert-info">Database: {{load_time}} sec</div>
+                {% endif %}
+            {% endif %}
+
+            {% if source.html_header %}
+                {% if path == '/' %}
+                    <pre>{{source.html_header}}</pre>
+                {% endif %}
+            {% endif %}
 
             <table id="navigationTable" class="table table-hover">
                 <thead>
@@ -84,7 +99,7 @@
                             <div style="height: 2px;"></div>
                         </div>
                     </td>
-                    <td><a href="{{f.filename}}/" target="_self"><b>{{f.filename}}</b></a></td>
+                    <td><a href="{{f.filename}}{% if f.isdir %}/{% endif %}" target="_self"><b>{{f.filename}}</b></a></td>
                     <td><b>{{f.filesize}}</b></td>
                     <td>{{f.fileperm}}</td>
                     <td>{{f.filemodified}}</td>

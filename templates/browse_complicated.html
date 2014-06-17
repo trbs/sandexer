@@ -22,12 +22,21 @@
         margin-left:20px;
         width: 800px;
         margin:0 auto;
+        overflow:hidden;
+    }
+    div.sources_display_options{
+        width:780px;
+        height:30px;
+    }
+    div.source_header{
+        overflow:hidden;
+        min-height:48px;
     }
     div.source_container{
         padding-left: 10px;
         padding-right: 10px;
         width:800px;
-        margin-bottom:40px;
+        margin-bottom:16px;
     }
     div.source_thumbnail{
         float:left;
@@ -41,9 +50,12 @@
     div.source_header_text{
         float: left;
         min-height:48px;
-        width:690px;
+        width:666px;
         margin-left:8px;
         color: #444;
+    }
+    div.source_thumbnail_and_text{
+
     }
     div.source_header_info{
         overflow:hidden;
@@ -73,6 +85,8 @@
         width:260px;
         height:260px;
         float:left;
+        z-index:-1;
+        position: relative;
     }
     div.source_content{
         float:left;
@@ -133,6 +147,23 @@
         color: #428BCA;
         background-color: #FFFFFF;
     }
+    .btn:focus {
+        outline: none;
+    }
+    div.tags_container{
+        width:780px;
+        margin-left:2px;
+        height:30px;
+        color: #444;
+        font-size:13px;
+        font-weight:bold;
+    }
+    a.tags_value{
+        color: #428bca;
+        font-size:13px;
+        text-decoration:underline;
+        cursor:pointer;
+    }
 </style>
 
 <script>
@@ -145,22 +176,30 @@
     function fixHighchartsPieScale(target){ $(target).css('height','160px'); }
 </script>
 
-<div style="height: 40px;"></div>
+<div style="height: 20px;"></div>
 
 <div class="sources_container">
+    <div class="sources_display_options">
+        <div style="float:right">
+            <button id="btn_view_tags" class="btn btn-default btn-primary btn-xs"><span class="glyphicon glyphicon-th"></span> Show tags</button>
+            <button id="btn_view_detailed" class="btn btn-default btn-primary btn-xs"><span class="glyphicon glyphicon-th"></span> Show details</button>
+        </div>
+    </div>
     {% for source in sources %}
         <div class="source_container">
-            <div style="overflow:hidden;min-height:48px;">
-                <div class="source_thumbnail">
-                    <img class="source_thumbnail" src="{{source.thumbnail_url}}"/>
-                </div>
-                <div class="source_header_text">
-                    <span style="font-size:24px;">{{source.name}} </span>
-                    {% if source.country %}
-                        <img src="http://cdn.quakelive.com/web/2011071903/images/flags/nl_v2011071903.0.gif"/>
-                    {% endif %}
-                    <br>
-                    <span>{{source.description}}</span>
+            <div id="{{source.name}}/" class="source_header">
+                <div id="header_animate_{{source.name}}" class="source_thumbnail_and_text">
+                    <div class="source_thumbnail">
+                        <img class="source_thumbnail" src="{{source.thumbnail_url}}"/>
+                    </div>
+                    <div class="source_header_text">
+                        <span style="font-size:24px;">{{source.name}} </span>
+                        {% if source.country %}
+                            <img src="http://cdn.quakelive.com/web/2011071903/images/flags/nl_v2011071903.0.gif"/>
+                        {% endif %}
+                        <br>
+                        <span>{{source.description}}</span>
+                    </div>
                 </div>
                 <center>
                     <div class="source_header_info">
@@ -183,7 +222,7 @@
                 </center>
             </div>
             <hr>
-            <div class="source_content_container">
+            <div id="detailed_view_content" class="source_content_container">
                 <div id="pie_filedistribution_container_{{source.name}}" class="formatgraph">
 
                 </div>
@@ -206,6 +245,17 @@
                     </table>
                     <a style="float:right;" href="{{source.name}}/" class="btn btn-blue"><i class="icon-white icon-share-alt"></i> Browse this source</a>
                 </div>
+            </div>
+            <hr class="border-bottom">
+            <div class="tags_container">
+                Tags:
+                {% if source.tags %}
+                    {% for tag in source.tags %}
+                        <a href="?tag={{tag}}" class="tags_value">{{tag}}</a>
+                    {% endfor %}
+                {% else %}
+                    <b>None</b>
+                {% endif %}
             </div>
         </div>
 
@@ -241,13 +291,92 @@
 
 
 <script>
-    $(window).bind('resize', function(){
+    var display_show_details = true;
+    var display_show_tags = true;
 
+    var display_show_details = true;
+    var display_show_tags = true;
+
+    $('.source_header').click(
+            function(){
+                if (!display_show_details){
+                    var uri = $(this).attr('id');
+                    window.location.href = uri;
+                }
+            }
+    );
+
+    $('.source_header').hover(function(){
+        if(!display_show_details){
+            $(this).css('background-color', '#e1e1e1');
+        }
+        else{
+            $(this).css('background-color', 'transparent');
+        }
+    }, function(){
+        $(this).css('background-color', 'transparent');
     });
 
-    $('.source_container').hover(function(){
+//    $('.source_header').hover(function(){
+//        if(!display_show_details){
+//            var e = '#header_animate_' + $(this).attr('id');
+//            $(this).animate({ marginLeft: "10px"}, {duration:100, queue: false, easing: 'linear'});
+//        }
+//    },function(){
+//        $(this).animate({ marginLeft: "0px"}, {duration:100, queue: false, easing: 'linear'});
+//    });
 
+    $('#btn_view_detailed').click(function(){
+        if(display_show_details){
+            display_show_details = false;
+            $('.source_content_container').hide();
+            $('.border-bottom').hide()
+
+            $('#btn_view_detailed').attr('class', 'btn btn-default btn-xs');
+
+            $('.source_header').css('cursor','pointer');
+        }
+        else{
+            display_show_details = true;
+            $('.source_content_container').show()
+            $('.border-bottom').show()
+
+            $('#btn_view_detailed').attr('class', 'btn btn-default btn-primary btn-xs');
+
+            $('.source_header').css('cursor','normal');
+            console.log('hidden');
+
+            $('.source_header').css('background-color', 'transparent');
+        }
     });
+
+    $('#btn_view_tags').click(function(){
+        if(display_show_tags){
+            display_show_tags = false;
+            $('.tags_container').hide();
+
+            $('#btn_view_tags').attr('class', 'btn btn-default btn-xs');
+
+        }
+        else{
+            display_show_tags = true;
+            $('.tags_container').show()
+
+            $('#btn_view_tags').attr('class', 'btn btn-default btn-primary btn-xs');
+
+        }
+    });
+    display_show_tags = false;
+    $('.tags_container').hide();
+
+    $('#btn_view_tags').attr('class', 'btn btn-default btn-xs');
+    display_show_details = false;
+    $('.source_content_container').hide();
+    $('.border-bottom').hide()
+
+    $('#btn_view_detailed').attr('class', 'btn btn-default btn-xs');
+
+    $('.source_header').css('cursor','pointer');
 </script>
 
 {% endblock %}

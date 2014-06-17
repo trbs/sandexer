@@ -62,6 +62,8 @@ class Postgres():
                   filedistribution_movies integer,
                   filedistribution_music integer,
                   filedistribution_pictures integer,
+                  tags text[],
+                  html_header text,
                 )
                 WITH (
                   OIDS=FALSE
@@ -122,7 +124,8 @@ class Postgres():
               id serial primary key,
               fileadded timestamp without time zone NOT NULL,
               fileext text,
-              fileformat integer
+              fileformat integer,
+              download_count integer
             )
             WITH (
               OIDS=FALSE
@@ -161,7 +164,7 @@ class Postgres():
             df.filename = urllib.quote_plus(df.filename) if df.filename else None
             df.filepath = urllib.quote_plus(df.filepath) if df.filepath else None
 
-            line = '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' % (isdir, df.filename, df.filesize, df.filepath, df.filemodified, df.fileperm, inserts+1, start, df.fileext, df.fileformat)
+            line = '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' % (isdir, df.filename, df.filesize, df.filepath, df.filemodified, df.fileperm, inserts+1, start, df.fileext, df.fileformat, None)
             f.write(line)
 
             inserts += 1
@@ -214,6 +217,16 @@ class Postgres():
         # Should be save from sqli as long as source_name is alphanummeric
         sql = 'UPDATE sources SET crawl_lastcrawl=\'%s\' WHERE name=\'%s\';' % (start, source_name)
         self._execute(sql)
+
+    def get_file(self, source_name, filepath, filename):
+
+        path = urllib.quote_plus(filepath)
+        filename = urllib.quote_plus(filename)
+        sql = 'SELECT * FROM \"files_%s\" WHERE filepath = ' % source_name
+        sql += '%s AND filename = %s;'
+
+        results = self._pool.fetchone(sql, (path, filename))
+        return results
 
     def get_directory(self, source_name, path):
         sql = 'SELECT * from \"files_%s\" WHERE filepath = ' % source_name

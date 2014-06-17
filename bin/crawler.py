@@ -169,8 +169,8 @@ class WebCrawl():
             if response_indexer.headers.get('content-type'):
                 content_type = response_indexer.headers.get('content-type')
 
-                if not content_type == 'application/x-gzip':
-                    return Debug('Source \'%s\' - Invalid content-type for file \'%s\' (%s).' % (self.name, self._cfg.get('Protoindex', 'file_name'), content_type))
+#                if not content_type == 'application/x-gzip':
+#                    return Debug('Source \'%s\' - Invalid content-type for file \'%s\' (%s).' % (self.name, self._cfg.get('Protoindex', 'file_name'), content_type))
 
             # check server header content-length to determine how big the file is
             if response_indexer.headers.get('content-length'):
@@ -233,6 +233,9 @@ class WebCrawl():
                 dirs.pop(0)
                 continue
             try:
+                if self.crawl_url.reluri.endswith('/') and dirs[0].startswith('/'):
+                    self.crawl_url.reluri = self.crawl_url.reluri[:-1]
+
                 # fetch opendir
                 response = self.request(
                     url=self.crawl_url.reluri + dirs[0],

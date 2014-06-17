@@ -77,7 +77,8 @@ class Icons():
             'Security/key_security-128.png', #15 security
             'Computer_Hardware/cd-128.png', #16 cd, image files
             'Very_Basic/download-128.png', #17 download icon
-            'Computer_Hardware/burn_cd-128.png' #18 iso, dmg, etc
+            'Computer_Hardware/burn_cd-128.png', #18 iso, dmg, etc
+            'Industry/trash-128.png' # 19, trash bin
             ]
 
         self.additional_icons_exts = {
@@ -126,7 +127,7 @@ class Icons():
             'war': 12, 'tar.gz': 12, 's7z': 12, 'tbz2': 12, 'xp3': 12, 'cab': 12,
             'rar': 12, 'cpt': 12, 'uc': 12, 'sh': 14, 'batch': 14, 'au3': 14, 'au2': 14,
             'au': 14, 'vbs': 14, 'magnet': 17, 'mdx': 16,
-            'ibb': 16, 'ibq': 16, 'ibp': 16, 'bin': 16, 'cd': 16, 'iso': 16,
+            'ibb': 16, 'ibq': 16, 'ibp': 16, 'bin': 16, 'cd': 16,
             'ccd': 16, 'p01': 16, 'isz': 16, 'hfv': 16, 'nfi': 16, 'cl5': 16,
             'hfs': 16, 'sdi': 16, 'avhd': 16, 'flp': 16, 'swm': 16, 'sqfs': 16,
             'fdi': 16, 'dvd': 16, 'd00': 16, 'd01': 16, 'disk': 16, 'vaporcd': 16,
@@ -156,5 +157,5 @@ class Icons():
             'vfd': 16, 'p2i': 16, 'b6t': 16, 'dxp': 16, 'vmdk': 16,
             'omg': 16, 'atr': 16, 'g41': 16, 'gi': 16, '000': 16, 'sparseimage': 16,
             'pqi': 16, 'nri': 16, 'nrg': 16, 'tao': 16, 'mrimg': 16,
-            'dmg': 17
+            'dmg': 18, 'iso': 18, 'tmp': 19, 'temp': 19
             }

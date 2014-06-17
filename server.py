@@ -1,14 +1,15 @@
 from gevent import monkey
 monkey.patch_all()
 
-from bottle import error, post, get, run, static_file, abort, redirect, response, request,  debug, app, route, jinja2_view, Jinja2Template, url
+from bottle import error, post, get, run, static_file, abort, redirect, response, request, debug, app, route, jinja2_view, Jinja2Template, url
 
 from beaker.middleware import SessionMiddleware
 from cork import Cork
-
+import random
 import logging
 import logging.handlers
 import functools, sys, operator
+from datetime import datetime
 
 from bin.bytes2human import bytes2human, human2bytes
 from bin.files import Icons
@@ -117,28 +118,50 @@ def browse():
     aaa.require(fail_redirect='/login')
 
     sources = file_sources.list
-
+    sources = sorted(sources, key=lambda k: random.random())
     for source in sources:
         dom = DataObjectManipulation()
         source = dom.humanize(source, humandates=True, dateformat='%d/%m/%Y %H:%M', humansizes=True)
 
     return {
         'title': 'Browse',
-        'sources': [z for z in sources if z.name != 'Zarya'],
+        'sources': sources,
         'navigation': generate_navigation(admin)
     }
 
 @route('/browse/<path:path>')
 @view('browse_directory.html')
 def browse_dir(path):
+    #to-do: fix this crap
+    start_time = datetime.now()
     files = []
     spl = path.split('/')
     source_name = spl[0]
-    path =  '/' + '/'.join(spl[1:])
+    source = None
+    filepath =  '/' + '/'.join(spl[1:-1])
+    filename = ''
+    isdir = False
 
-    for source in file_sources.list:
-        if source.name == source_name:
-            files = db.get_directory(source_name, path)
+    if path.endswith('/'):
+        isdir = True
+    else:
+        filename = path.split('/')[-1]
+
+    if filepath != '/':
+        filepath += '/'
+
+    for s in file_sources.list:
+        if s.name == source_name:
+
+            if filepath != '/' and not isdir:
+                get_file = db.get_file(source_name, filepath, filename)
+
+                if get_file:
+                    url = s.crawl_password + filepath[1:] + filename
+                    # update some download stats here
+                    return redirect(url)
+
+            files = db.get_directory(source_name, filepath)
             files.sort(key=operator.attrgetter("filename"), reverse=False)
 
             for f in files:
@@ -153,13 +176,18 @@ def browse_dir(path):
                     f.url_icon = '/static/icons/%s/128/' % theme + icon
                 else:
                     f.url_icon = '/static/icons/%s' % theme  + icons.file_icons[f.fileformat]
+            source = s
             break
+    load_time = (datetime.now() - start_time).total_seconds()
 
     return {
+        'load_time': load_time,
         'title': 'Browse',
+        'path': filepath,
         'files': files,
+        'source': source,
         'navigation': generate_navigation(admin),
-        'breadcrumbs': generate_breadcrumps(source_name+path, 'browse/')
+        'breadcrumbs': generate_breadcrumps(source_name+filepath, 'browse/')
     }
 
 @route('/search')
@@ -305,12 +333,12 @@ def error404(error):
 
 #
 #from bin.urlparse import ParseUrl
-#url = ParseUrl('http://cdimage.debian.org/debian-cd/7.5.0-live/amd64/')
+#url = ParseUrl('zz')
 #
 #from datetime import datetime
 #from bin.crawler import WebCrawl
 #start = datetime.now()
-#c = WebCrawl(cfg=cfg, db=db, name='DebianCD', url=url, ua='sandexer webcrawl - dsc - https://github.com/skftn/sandexer/', crawl_wait=float(0.1))
+#c = WebCrawl(cfg=cfg, db=db, name='Fluffy', url=url, ua='sandexer webcrawl - dsc - https://github.com/skftn/sandexer/', auth_username='', auth_password='', auth_type='BASIC', crawl_wait=float(0.1))
 #aa = c.http()
 #from bin.utils import Debug
 #if isinstance(aa, Debug):

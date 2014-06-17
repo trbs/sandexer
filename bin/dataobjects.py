@@ -42,7 +42,9 @@ class Sources():
 
             def calc_dist(inp):
                 if source.total_files:
-                    return round(100 * round(inp) / source.total_files, 2)
+                    pct = round(100 * round(inp) / source.total_files, 2)
+                    return pct if pct >= 1 else 0
+
                 else:
                     return 0
 
