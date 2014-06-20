@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+        padding: 2px;
+        line-height: 1.42857143;
+        border-top: 1px solid #ddd;
+        vertical-align: middle;
+    }
+</style>
+<div style="height: 20px;"></div>
+<div class="container">
+    <ol class="breadcrumb">
+        <li class="active"><a href="/admin">Admin</a></li>
+        <li>Sources</li>
+    </ol>
+
+    <table id="navigationTable" class="table table-hover">
+        <thead>
+            <tr>
+                <th></th>
+                <th style="width:140px;">Name</th>
+                <th style="width:80px;">Size</th>
+                <th style="min-width: 100px;">Status</th>
+                <th style="width:100px;">Owner</th>
+                <th style="width:100px;">Next crawl</th>
+                <th style="width:40px;"></th>
+                <th style="width:40px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for source in sources %}
+                <tr>
+                    <td style="width: 66px;"><img width="32px" height="32px" src="{{source.thumbnail_url}}"/></td>
+                    <td><b>{{source.name}}</b></td>
+                    <td>{{source.total_size}}</td>
+                    <td><span class="label label-success">OK</span></td>
+                    <td>admin</td>
+                    <td>in 5 days</td>
+                    <td><a href="/admin/sources/edit/{{source.name}}">Edit</a></td>
+                    <td><a href="/admin/sources/remove/{{source.name}}">Delete</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

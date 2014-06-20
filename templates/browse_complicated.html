@@ -25,8 +25,10 @@
         overflow:hidden;
     }
     div.sources_display_options{
-        width:780px;
-        height:30px;
+        width:800px;
+        height:40px;
+        margin:0 auto;
+        border-bottom:1px solid green;
     }
     div.source_header{
         overflow:hidden;
@@ -176,15 +178,26 @@
     function fixHighchartsPieScale(target){ $(target).css('height','160px'); }
 </script>
 
+<style>
+    div.b{
+    color: #dce6e4;
+    }
+</style>
+
 <div style="height: 20px;"></div>
-<div class="sources_container">
-    {% if sources %}
-    <div class="sources_display_options">
-        <div style="float:right">
+<div class="sources_display_options">
+    <div style="width:800px;overflow:hidden;height:40px;">
+        <div style="float:right;">
+            <button id="btn_sortfilter" class="btn btn-default btn-primary btn-xs"><span class="glyphicon glyphicon-th"></span> Sort and Filter</button>
             <button id="btn_view_tags" class="btn btn-default btn-primary btn-xs"><span class="glyphicon glyphicon-th"></span> Show tags</button>
             <button id="btn_view_detailed" class="btn btn-default btn-primary btn-xs"><span class="glyphicon glyphicon-th"></span> Show details</button>
+
         </div>
     </div>
+</div>
+<div class="sources_container">
+    {% if sources %}
+
         {% for source in sources %}
             <div class="source_container">
                 <div id="{{source.name}}" class="source_header">
@@ -243,7 +256,8 @@
                             </tr>
                             </tbody>
                         </table>
-                        <a style="float:right;" href="{{source.name}}/" class="btn btn-blue"><i class="icon-white icon-share-alt"></i> Browse this source</a>
+                        <a style="float:right;" href="browse/{{source.name}}/" class="btn btn-blue"><i class="icon-white icon-share-alt"></i> Browse this source</a>
+                        <a style="float:right;" href="/admin/sources/edit/{{source.name}}/" class="btn btn-default"><i class="icon-white icon-share-alt"></i> Edit</a>
                     </div>
                 </div>
                 <hr class="border-bottom">
@@ -304,26 +318,26 @@
             function(){
                 if (!display_show_details){
                     var uri = $(this).attr('id') + '/';
-                    window.location.href = uri;
+                    window.location.href = '/browse/'+uri;
                 }
             }
     );
 
     $('.source_header').hover(function(){
-        var id = $(this).attr('id');
+        //var id = $(this).attr('id');
         if(!display_show_details){
-            //$(this).css('background-color', '#e1e1e1');
-            console.log('#header_' + id);
-            $('#header_' + id).css('text-decoration', 'underline');
+            $(this).css('background-color', '#DCE6E4');
+
+            //$('#header_' + id).css('text-decoration', 'underline');
         }
         else{
-            $('#header_' + id).css('text-decoration', 'none');
-            //$(this).css('background-color', 'transparent');
+            //$('#header_' + id).css('text-decoration', 'none');
+            $(this).css('background-color', 'transparent');
         }
     }, function(){
-        var id = $(this).attr('id');
-        //$(this).css('background-color', 'transparent');
-        $('#header_' + id).css('text-decoration', 'none');
+        //var id = $(this).attr('id');
+        $(this).css('background-color', 'transparent');
+        //$('#header_' + id).css('text-decoration', 'none');
     });
 
 //    $('.source_header').hover(function(){
@@ -335,57 +349,59 @@
 //        $(this).animate({ marginLeft: "0px"}, {duration:100, queue: false, easing: 'linear'});
 //    });
 
+    function show_tags(){
+        display_show_tags = true;
+        $('.tags_container').show();
+
+        $('#btn_view_tags').attr('class', 'btn btn-default btn-primary btn-xs');
+    }
+
+    function hide_tags(){
+        display_show_tags = false;
+        $('.tags_container').hide();
+
+        $('#btn_view_tags').attr('class', 'btn btn-default btn-xs');
+    }
+
+    function show_details(){
+        display_show_details = true;
+        $('.source_content_container').show();
+        $('.border-bottom').show();
+
+        $('#btn_view_detailed').attr('class', 'btn btn-default btn-primary btn-xs');
+
+        $('.source_header').css('cursor', 'default');
+    }
+
+    function hide_details(){
+        display_show_details = false;
+        $('.source_content_container').hide();
+        $('.border-bottom').hide();
+
+        $('#btn_view_detailed').attr('class', 'btn btn-default btn-xs');
+
+        $('.source_header').css('cursor','pointer');
+    }
+
     $('#btn_view_detailed').click(function(){
         if(display_show_details){
-            display_show_details = false;
-            $('.source_content_container').hide();
-            $('.border-bottom').hide()
-
-            $('#btn_view_detailed').attr('class', 'btn btn-default btn-xs');
-
-            $('.source_header').css('cursor','pointer');
+            hide_details();
         }
         else{
-            display_show_details = true;
-            $('.source_content_container').show()
-            $('.border-bottom').show()
-
-            $('#btn_view_detailed').attr('class', 'btn btn-default btn-primary btn-xs');
-
-            $('.source_header').css('cursor','normal');
-            console.log('hidden');
-
-            $('.source_header').css('background-color', 'transparent');
+            show_details();
         }
     });
 
     $('#btn_view_tags').click(function(){
         if(display_show_tags){
-            display_show_tags = false;
-            $('.tags_container').hide();
-
-            $('#btn_view_tags').attr('class', 'btn btn-default btn-xs');
-
+            hide_tags();
         }
         else{
-            display_show_tags = true;
-            $('.tags_container').show()
-
-            $('#btn_view_tags').attr('class', 'btn btn-default btn-primary btn-xs');
-
+            show_tags();
         }
     });
-    display_show_tags = false;
-    $('.tags_container').hide();
 
-    $('#btn_view_tags').attr('class', 'btn btn-default btn-xs');
-    display_show_details = false;
-    $('.source_content_container').hide();
-    $('.border-bottom').hide()
-
-    $('#btn_view_detailed').attr('class', 'btn btn-default btn-xs');
-
-    $('.source_header').css('cursor','pointer');
+    hide_tags();
 </script>
 
 {% endblock %}

@@ -83,32 +83,34 @@
                 </tr>
             </thead>
             <tbody data-link="row" class="rowlink">
-            {% for f in files %}
-                <tr>
-                    <td class="rowlink-skip" style="background-color:white;">
-                        <div id="{{f.filename}}" class="filethumbnail">
-                            <img class="fileicon" src="{{f.url_icon}}"/>
-                            <div style="height: 2px;"></div>
-                        </div>
-                    </td>
-                    <td><a href="{{f.filename}}{% if f.isdir %}/{% endif %}" target="_self"><b>{{f.filename}}</b></a></td>
-                    <td><b>{{f.filesize}}</b></td>
-                    <td>{{f.fileperm}}</td>
-                    <td>{{f.filemodified}}</td>
-                </tr>
-            {% endfor %}
+                {% for f in files %}
+                    <tr rel="popover" title="Preview">
+                        <td class="rowlink-skip" style="background-color:white;">
+                            <div id="{{f.filename}}" class="filethumbnail">
+                                <img class="fileicon" src="{{f.url_icon}}"/>
+                                <div style="height: 2px;"></div>
+                            </div>
+                        </td>
+                        <td><a class="hoi" title='' href="{{f.filename}}{% if f.isdir %}/{% endif %}" target="_self"><b>{{f.filename}}</b></a></td>
+                        <td><b>{{f.filesize}}</b></td>
+                        <td>{{f.fileperm}}</td>
+                        <td>{{f.filemodified}}</td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
         {% else %}
             nothing found
         {% endif %}
     </div>
+
 </div>
 <script>
     $(document).ready(function(){
         $(function(){
             $("#navigationTable").tablesorter();
-
+            var image = '<img width=256 src=\"http://i.imgur.com/SoYA2Og.jpg\"/>';
+            $('.tr').popover({placement: 'bottom', content: image, html: true, trigger: "hover"});
         });
     });
 </script>

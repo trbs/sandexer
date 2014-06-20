@@ -3,6 +3,8 @@ monkey.patch_all()
 
 from bottle import error, post, get, run, static_file, abort, redirect, response, request, debug, app, route, jinja2_view, Jinja2Template, url
 
+from wtforms import Form, TextField, validators,StringField, PasswordField
+
 from beaker.middleware import SessionMiddleware
 from cork import Cork
 import random
@@ -71,7 +73,7 @@ def generate_navigation(admin):
             {'href': '/logout', 'caption': 'Logout'},
             {'href': '/admin', 'caption': 'Admin'} if admin else None]
 
-def generate_breadcrumps(path, dir=''):
+def generate_breadcrumps(path, dir='', lastslash=True, capitalize=False):
     crumbs = []
     spl = [z for z in path.split('/') if z]
 
@@ -81,8 +83,8 @@ def generate_breadcrumps(path, dir=''):
         name = link[:-1].split('/')[-1]
 
         crumbs.append({
-            'href': dir + link,
-            'name': name,
+            'href': dir + link[:-1] if not lastslash else dir + link,
+            'name': name.capitalize() if capitalize else name,
             'active': 'active' if i == len(spl) -1 else ''})
 
     return crumbs
@@ -91,7 +93,6 @@ def generate_breadcrumps(path, dir=''):
 @view('index.html')
 def root():
     """Only authenticated users can see this"""
-    a = request
     aaa.require(fail_redirect='/login')
 
     message = 'Hi welcome to my site please don\'t fucking wreck shit kthx.'
@@ -111,6 +112,19 @@ def browse():
     return redirect('/browse?sort=[size=desc]')
 
 import bin.test3
+
+class LoginForm(Form):
+    username = StringField('Username')
+    password = PasswordField('Password')
+
+form = LoginForm()
+
+@route('/test')
+@view('bla.html')
+def test():
+    return {
+        'form': LoginForm()
+    }
 
 @route('/browse')
 @view('browse_complicated.html')
@@ -144,6 +158,9 @@ def browse():
             else:
                 sort = None
 
+    if 'filter' in query:
+        filter = query['filter']
+
     #"""Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
 
@@ -154,7 +171,8 @@ def browse():
 
         if sort['val'] == 'desc':
             sources = sources[::-1]
-
+    else:
+        sources = sorted(sources, key=lambda k: random.random())
     for source in sources:
         dom = DataObjectManipulation()
         source = dom.humanize(source, humandates=True, dateformat='%d/%m/%Y %H:%M', humansizes=True)
@@ -220,7 +238,10 @@ def browse_dir(path):
                     f.url_icon = theme_path + icons.file_icons[f.fileformat]
             source = s
             break
+
     load_time = (datetime.now() - start_time).total_seconds()
+
+    files = sorted(files, key=lambda k: k.filename.lower())
 
     return {
         'load_time': load_time,
@@ -285,28 +306,62 @@ def show_current_user_role():
     aaa.require(fail_redirect='/login')
     return aaa.current_user.role
 
+@route('/admin/')
+def admin():
+    aaa.require(role='admin', fail_redirect='/404')
+    return redirect('/admin')
+
 @route('/admin')
 @view('admin')
 def admin():
     """Only admin users can see this"""
-    aaa.require(role='admin', fail_redirect='/sorry_page')
+    aaa.require(role='admin', fail_redirect='/404')
 
-    view = Views.Options()
-    view.is_admin = request.environ.get('beaker.session')['username'] == 'admin'
-
-    return dict(
-        current_user=aaa.current_user,
-        users=aaa.list_users(),
-        roles=aaa.list_roles(),
-        view=view
-    )
+    return {
+        'title': 'Admin',
+        'navigation': generate_navigation(admin=True)
+    }
 
 @route('/admin/sources')
+@view('admin_sources.html')
 def sources():
     """Only admin users can see this"""
-    aaa.require(role='admin', fail_redirect='/login')
+    aaa.require(role='admin', fail_redirect='/404')
 
-    return template('sources')
+    sources = file_sources.list
+    dom = DataObjectManipulation()
+
+    for source in sources:
+        source = dom.humanize(source, humansizes=True)
+
+    sources = sorted(sources, key=lambda k: k.name)
+
+    return {
+        'title': 'Admin',
+        'navigation': generate_navigation(admin=True),
+        'sources': sources
+    }
+
+@route('/admin/sources/edit/<path:path>')
+@view('admin_sources_edit.html')
+def edit_source(path):
+    """Only admin users can see this"""
+    aaa.require(role='admin', fail_redirect='/404')
+
+    name = path
+    source = None
+
+    for s in file_sources.list:
+        if s.name == name:
+            source = s
+
+    return {
+        'title': 'Admin',
+        'path': path,
+        'navigation': generate_navigation(admin=True),
+        'breadcrumbs': generate_breadcrumps('/sources/edit/', 'admin/', lastslash=False, capitalize=True),
+        'source': source
+    }
 
 @route('/admin/sources/add')
 def source_add():
@@ -314,6 +369,7 @@ def source_add():
     aaa.require(role='admin', fail_redirect='/login')
 
     return template('source_add')
+
 import bottle
 @bottle.post('/create_user')
 def create_user():
@@ -322,7 +378,6 @@ def create_user():
         return dict(ok=True, msg='')
     except Exception, e:
         return dict(ok=False, msg=e.message)
-
 
 @bottle.post('/delete_user')
 def delete_user():
@@ -337,7 +392,7 @@ def delete_user():
 def logout():
     aaa.logout(success_redirect='/login')
 
-@route('/debug')
+@route('/admin/debug')
 @view('debug.html')
 def debug():
     """Only admins can see this"""

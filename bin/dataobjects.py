@@ -149,7 +149,10 @@ def UrlVarParse(query):
                         spl = v.split('=')
 
                         if len(spl) == 2 and spl[0] and spl[1]:
+                            #if ',' in spl[1]:
+                                #spl[1] ==
                             newval.append({spl[0]: spl[1]})
+
                             continue
                         else:
                             continue

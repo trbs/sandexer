@@ -2,6 +2,9 @@
 
 {% block content %}
 
-Hello {{ name }}! How are you?
+<form method="POST" action="/formtest">
+    <div>{{ form.username.label }}: {{ form.username(class="css_class") }}</div>
+    <div>{{ form.password.label }}: {{ form.password() }}</div>
+</form>
 
 {% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div style="height:20px;"></div>
+<div class="container">
+    {% if source %}
+        <ol class="breadcrumb">
+            <li><a href="/admin">Admin</a></li>
+            {% for crumb in breadcrumbs %}
+                {% if crumb['active'] %}
+                    <li class="active">{{crumb['name']}}</li>
+                {% else %}
+                    <li><a href="/{{crumb['href']}}">{{crumb['name']}}</a></li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    {% else %}
+        <h1>Source '{{path}}' does not exist.</h1>
+        <br>
+        <img src="http://i.imgur.com/3Bnznp3.png"/>
+        <h2>Sorry, I looked everywhere for it.</h2>
+    {% endif %}
+</div>
+{% endblock %}
