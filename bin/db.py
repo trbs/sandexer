@@ -63,7 +63,7 @@ class Postgres():
                   filedistribution_music integer,
                   filedistribution_pictures integer,
                   tags text[],
-                  html_header text,
+                  html_header text
                 )
                 WITH (
                   OIDS=FALSE

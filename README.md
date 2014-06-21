@@ -19,8 +19,10 @@ Installation
     ~$ source bin/activate
     ~$ git clone https://github.com/skftn/sandexer.git
     ~$ mv sanderex src
-    ~$ cd $_
-    ~$ pip install -r requirements
+    ~$ pip install -r src/requirements.txt
+    --
+    This will fail for bottle-flash. Fix: pip install --no-install bottle-flash; touch build/bottle-flash/README.rst;pip install --no-download bottle-flash
+    --
     ~$ cp conf/config.example conf/config
     ~$ vim config.py
     --Edit the config, follow instructions--

@@ -3,7 +3,8 @@ monkey.patch_all()
 
 from bottle import error, post, get, run, static_file, abort, redirect, response, request, debug, app, route, jinja2_view, Jinja2Template, url
 
-from wtforms import Form, TextField, validators,StringField, PasswordField
+
+from wtforms import Form
 
 from beaker.middleware import SessionMiddleware
 from cork import Cork
@@ -20,7 +21,13 @@ from bin.db import Postgres
 from bin.dataobjects import Sources, DataObjectManipulation, UrlVarParse
 from bin.utils import Debug
 from bin.api import Api
+from bin.forms import RegistrationForm
 
+from bottle import hook
+
+@hook('after_request')
+def enable_cors():
+    response.headers['X-Pirate'] = 'Yarrr'
 
 cfg = Config()
 cfg.reload()
@@ -39,7 +46,6 @@ db_init = db.init_db()
 if isinstance(db_init, Debug):
     log.error(str(Debug))
     sys.exit()
-
 
 file_sources = Sources(db, cfg)
 file_sources.get_sources()
@@ -111,19 +117,11 @@ def browse():
 
     return redirect('/browse?sort=[size=desc]')
 
-import bin.test3
-
-class LoginForm(Form):
-    username = StringField('Username')
-    password = PasswordField('Password')
-
-form = LoginForm()
-
 @route('/test')
 @view('bla.html')
 def test():
     return {
-        'form': LoginForm()
+        'form': ''
     }
 
 @route('/browse')
@@ -323,7 +321,7 @@ def admin():
     }
 
 @route('/admin/sources')
-@view('admin_sources.html')
+@view('sources.html')
 def sources():
     """Only admin users can see this"""
     aaa.require(role='admin', fail_redirect='/404')
@@ -343,7 +341,7 @@ def sources():
     }
 
 @route('/admin/sources/edit/<path:path>')
-@view('admin_sources_edit.html')
+@view('sources_edit.html')
 def edit_source(path):
     """Only admin users can see this"""
     aaa.require(role='admin', fail_redirect='/404')
@@ -363,12 +361,23 @@ def edit_source(path):
         'source': source
     }
 
-@route('/admin/sources/add')
+@route('/admin/sources/add', method=['POST', 'GET'])
+@view('source_add.html')
 def source_add():
-    """Only admin users can see this"""
-    aaa.require(role='admin', fail_redirect='/login')
+    #"""Only admin users can see this"""
+    #aaa.require(role='admin', fail_redirect='/login')
 
-    return template('source_add')
+    form = RegistrationForm(request.forms)
+    if request.method == 'POST':
+        a = form.validate()
+
+        return redirect(url_for('login'))
+
+    return {
+        'title': 't',
+        'navigation': generate_navigation(admin=True),
+        'form': RegistrationForm()
+    }
 
 import bottle
 @bottle.post('/create_user')
@@ -412,6 +421,7 @@ def debug():
     }
 
 @bottle.error(404)
+@bottle.error(405)
 @bottle.error(500)
 @bottle.error(501)
 @bottle.error(502)
