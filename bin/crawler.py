@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 import zlib
 from bin.dataobjects import DiscoveredFile
 from bin.utils import Debug
+from bin.protocols import Web
 
 #to-do:
 # support SMB/FTP/AFP
@@ -49,10 +50,12 @@ class FtpCrawl():
 
 class WebCrawl():
     def __init__(self, **kwargs):
+        self.name = kwargs['name']
         self._cfg = kwargs['cfg']
         self._db = kwargs['db']
-        self.name = kwargs['name']
-        self.crawl_url = kwargs['url']
+        self._web = Web(db=self._db, cfg=self._cfg)
+
+        self.crawl_url = kwargs['url'] if 'url' in kwargs else None
         self.crawl_ua = kwargs['ua'] if 'ua' in kwargs else self._cfg.get('Crawler', 'default_ua')
         self.crawl_sslverify = kwargs['ssl_verify'] if 'ssl_verify' in kwargs else self._cfg.get('Crawler', 'verify_ssl')
 
@@ -72,9 +75,14 @@ class WebCrawl():
         self.crawl_wait = kwargs['crawl_wait'] if 'crawl_wait' in kwargs else 0
 
     def http(self):
-        response_head = self.request(
+        response_head = self._web.request(
             url=self.crawl_url.reluri,
-            request_method=requests.head)
+            request_method=requests.head,
+            crawl_auth = self.crawl_auth,
+            crawl_auth_type= self.crawl_auth_type,
+            crawl_ua = self.crawl_ua,
+            verifyssl=self.crawl_sslverify
+        )
 
         if isinstance(response_head, Debug):
             # Website not found
@@ -153,7 +161,7 @@ class WebCrawl():
             read_block_size = 1024*8
 
             # set up a stream to the file
-            response_indexer = self.request(
+            response_indexer = self._web.request(
                 url=url + self._cfg.get('Protoindex', 'file_name'),
                 request_method=requests.get,
                 headers={'User-Agent': self.crawl_ua,
@@ -385,50 +393,6 @@ class WebCrawl():
                 discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None, fileformat=fileformat, fileext=ext))
 
         return [discovered_files, dirs]
-
-    def request(self, url, request_method, headers=None, stream=False, redirects=True):
-        print url
-        try:
-            response = request_method(
-                url,
-                stream=stream,
-                auth=self.crawl_auth,
-                allow_redirects=redirects,
-                verify=self.crawl_sslverify,
-                headers=headers if headers else {'User-Agent': self.crawl_ua},
-                timeout=self._cfg.get('Crawler', 'timeout'))
-
-            if response.status_code == 200 or response.status_code == 301:
-                return response
-
-            elif response.status_code == 401:
-                if 'www-authenticate' in response.headers:
-                    auth = response.headers['www-authenticate'].lower()
-
-                    if auth.startswith('basic'):
-                        if not self.crawl_auth:
-                            return Debug('Source \'%s\' - Requires BASIC authentication. None provided.' % self.name)
-
-                        elif self.crawl_auth_type is HTTPDigestAuth:
-                            return Debug('Source \'%s\' - BASIC authentication required for accessing \'%s\'. (tried DIGEST).' % (self.name, url))
-
-                    elif auth.startswith('digest'):
-                        if not self.crawl_auth:
-                            return Debug('Source \'%s\' - Requires DIGEST authentication. None provided.' % self.name)
-                        elif self.crawl_auth_type is HTTPBasicAuth:
-                            return Debug('Source \'%s\' - DIGEST authentication required for accessing \'%s\'. (tried BASIC).' % (self.name, url))
-
-                return Debug('Source \'%s\' - Invalid authentication for \'%s\'.' % (self.name, url))
-            else:
-                return Debug('Source \'%s\' - Invalid status code \'%s\'. (\'%s\')' % (self.name, str(response.status_code), url))
-
-        except requests.exceptions.Timeout:
-            return Debug('Source \'%s\' - Timeout error while fetching \'%s\'.' % (self.name, url))
-        except requests.ConnectionError:
-            return Debug('Source \'%s\' - Connection error while fetching \'%s\'. Is the server up?' % (self.name, url))
-        except Exception as ex:
-            return Debug('Source \'%s\' - Undefined error while fetching \'%s\': %s' % (self.name, url, str(ex)))
-
 
 class Discovery():
     def __init__(self):

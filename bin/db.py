@@ -98,7 +98,9 @@ class Postgres():
         return {'columns': column_results[::-1],
                 'results': select_results}
 
-    def add_source(self, source_name, opts):
+    def add_source(self, source):
+        source_name = source.name
+
         sql = 'SELECT name FROM sources WHERE name=\'%s\'' % source_name
 
         result = self._execute(sql)
@@ -139,7 +141,31 @@ class Postgres():
         if isinstance(result, Debug):
             return result
 
+        column_sql = 'select column_name from information_schema.columns where table_name=\'sources\';'
+        res = None
+        try:
+            res = [''.join(z) for z in self._pool.fetchall(column_sql)]
+        except:
+            return Debug('')
+
         # set up options here
+        columns = []
+        values = []
+        for attr in [a for a in dir(source) if not a.startswith('__')]:
+            get_attr = getattr(source, attr)
+
+            if attr in source:
+                columns.append(attr)
+                values.append(get_attr)
+
+        if columns and values:
+            sql = 'INSERT INTO sources (%s) VALUES (%s)' % (','.join(columns), ['%s']*len(values))
+            a = 'e'
+            try:
+                res = self._execute(sql, tuple(values))
+            except:
+                pass
+
 
         return True
 

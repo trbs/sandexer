@@ -73,6 +73,7 @@ class Source():
         self.crawl_useragent = None
         self.crawl_verifyssl = None
         self.crawl_lastcrawl = None
+        self.crawl_wait = None
         self.filetypes = []
         self.bandwidth = None
         self.color = None
@@ -87,6 +88,12 @@ class Source():
         self.filedistribution_pictures = None
         self.filedistribution = None
 
+
+class FlashMessage():
+    def __init__(self, key, message, mtype='info'):
+        self.key = key
+        self.message = message
+        self.mtype = mtype
 
 class DataObjectManipulation():
     def dictionize(self, dataobject):
@@ -149,8 +156,6 @@ def UrlVarParse(query):
                         spl = v.split('=')
 
                         if len(spl) == 2 and spl[0] and spl[1]:
-                            #if ',' in spl[1]:
-                                #spl[1] ==
                             newval.append({spl[0]: spl[1]})
 
                             continue
@@ -159,7 +164,5 @@ def UrlVarParse(query):
 
                     newval.append(v)
                 parsed[key] = newval
-
-
 
     return parsed

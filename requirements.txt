@@ -1,5 +1,6 @@
 bottle
 bottle-cork
+bottle-servefiles
 gevent
 requests
 beautifulsoup4
@@ -8,4 +9,3 @@ python-dateutil
 jinja2
 beaker
 WTForms
-bottle-flash

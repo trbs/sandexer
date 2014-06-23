@@ -3,9 +3,6 @@ monkey.patch_all()
 
 from bottle import error, post, get, run, static_file, abort, redirect, response, request, debug, app, route, jinja2_view, Jinja2Template, url
 
-
-from wtforms import Form
-
 from beaker.middleware import SessionMiddleware
 from cork import Cork
 import random
@@ -18,12 +15,12 @@ from bin.bytes2human import bytes2human, human2bytes
 from bin.files import Icons
 from bin.config import Config
 from bin.db import Postgres
-from bin.dataobjects import Sources, DataObjectManipulation, UrlVarParse
+from bin.dataobjects import Source, Sources, DataObjectManipulation, UrlVarParse, FlashMessage
 from bin.utils import Debug
 from bin.api import Api
-from bin.forms import RegistrationForm
+import bin.forms as Forms
 
-from bottle import hook
+from bottle import hook, Bottle
 
 @hook('after_request')
 def enable_cors():
@@ -366,17 +363,27 @@ def edit_source(path):
 def source_add():
     #"""Only admin users can see this"""
     #aaa.require(role='admin', fail_redirect='/login')
+    flashmessages = [] # dirty hack, watch me care
 
-    form = RegistrationForm(request.forms)
+    form = Forms.sources_add(request.forms)
     if request.method == 'POST':
-        a = form.validate()
+        validate = form.validate()
+        if not validate:
+            for k, v in form.errors.iteritems():
+                flashmessages.append(FlashMessage(k, v[0], mtype='danger'))
+        else:
+            i = Source()
+            for bu,te in form.data.iteritems():
+                setattr(i,bu,te)
 
-        return redirect(url_for('login'))
+            db.add_source(i)
 
     return {
+        'form_obj': form._fields,
         'title': 't',
         'navigation': generate_navigation(admin=True),
-        'form': RegistrationForm()
+        'form': Forms.sources_add(),
+        'flashmessages': flashmessages
     }
 
 import bottle

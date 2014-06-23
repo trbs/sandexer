@@ -2,18 +2,181 @@
 
 {% block content %}
 
+<style>
+    .alert{
+        padding: 8px;
+        margin-bottom: 6px;
+    }
+    .form-control {
+        display: block;
+        max-width: 300px;
+        height: 34px;
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+    .penis{
+        width:180px;
+    }
+    @media (min-width: 1200px) {
+        .container {
+            width: 100%;
+        }
+    }
+    .span3{
+        background: #b3cdda;
+    }
+    .span9{
+        background: #d9e6ee;
+    }
+    .span3, .span9{
+        min-height: 250px;
+    }
+    .container {
+        margin-right: auto;
+        margin-left: auto;
+    }
+    .container, .navbar-static-top .container, .navbar-fixed-top .container, .navbar-fixed-bottom .container {
+        width: 940px;
+    }
+
+    h5,h4,h3,h2,h1{
+        color: #428bca;
+    }
+</style>
+<div style="height:20px;"></div>
 <div class="container">
-    {% from "_formhelpers.html" import render_field %}
-    <form method=post action="/admin/sources/add">
-        <dl>
-            {{ render_field(form.username) }}
-            {{ render_field(form.email) }}
-            {{ render_field(form.password) }}
-            {{ render_field(form.confirm) }}
-            {{ render_field(form.accept_tos) }}
-        </dl>
-        <p><input type=submit value=Register>
-    </form>
+    <div class="row">
+        {% if flashmessages %}
+
+        {% for message in flashmessages %}
+        <div class="alert alert-{{message.mtype}}">
+            <b>{{message.key}}: </b>{{message.message}}<br>
+        </div>
+        {% endfor %}
+        <br>
+        {% endif %}
+        <div class="col-xs-6">
+            {% from "_formhelpers.html" import render_field %}
+            <form class="form-horizontal" action="add" method="post">
+                <dl>
+                    <div>
+                        <h3>General</h3>
+                        <div style="margin-left:40px;width:400px;">
+                            {{ render_field(form.name) }}
+                            {{ render_field(form.description) }}
+                            {{ render_field(form.crawl_protocol) }}
+
+                            <div style="width:300px;margin-left:-15px;margin-bottom:16px;" class="input-group">
+                                <input name="crawl_url" id="location" placeholder="Location" type="text" class="form-control">
+                                <span class="input-group-btn">
+                                    <button class="btn btn-default" onclick="detecturl()" type="button">Test</button>
+                                </span>
+                            </div>
+                            <div id="detecturl_message" style="margin-left:10px;margin-bottom:16px;"></div>
+                            {{ render_field(form.bandwidth) }}
+                            {{ render_field(form.country) }}
+                        </div>
+                    </div>
+
+                    <br>
+
+                    <h3>Authentication</h3>
+                    <div style="margin-left:40px;width:400px;">
+                        {{ render_field(form.crawl_username) }}
+                        {{ render_field(form.crawl_password) }}
+                        {{ render_field(form.crawl_authtype) }}
+                    </div>
+
+                    <br>
+
+                    <h3>Crawling</h3>
+                    <div style="margin-left:40px;width:400px;">
+                        {{ render_field(form.crawl_interval) }}
+                        {{ render_field(form.crawl_wait) }}
+                        {{ render_field(form.crawl_useragent) }}
+                        {{ render_field(form.crawl_verifyssl) }}
+                    </div>
+                </dl>
+                <p><input type="submit" value="Add">
+            </form>
+
+        </div>
+
+        <div class="col-xs-6">
+            <h3>Help</h3>
+            <div style="margin-left:16px;">
+                <div id="helptext">
+                    Use this form to add new sources.
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
+<script>
+    function detecturl(){
+        var url = $('#location').val();
+        if(url != ''){
+            post('cmd=detecturl&url=' + url);
+        }
+        else{
+            $('#detecturl_message').html('<small style=\"color:red\">o_0?</small>');
+        }
+    }
+
+    $(document).ready(function(){
+        var help = {
+            'name': 'The name of this source.<br><br><ul class=\"list-group\"><b>Requirements:</b><li class=\"list-group-item\">Alphanummeric and underscores only</li><li class=\"list-group-item\">A minimum of 3 characters and a maximum of 14</li></ul>',
+            'crawl_protocol': 'Pick any of the available protocols.',
+            'crawl_url':'The location to the source. Examples:<div style="margin-left:20px;margin-top:10px;"><b>HTTP(s):</b><h4><span style="margin-left:20px;" class="label label-default">http://domain.org/files/</span></h4><br><b>FTP:</b><h4><span style="margin-left:20px;" class="label label-default">ftp://domain.org/</span></h4></div><br>You may also directly link to a protoindex file.<br><br><ul class=\"list-group\"><b>Requirements:</b><li class=\"list-group-item\">Must start with a valid scheme (<b>http://, https://, ftp://, smb://</b>)</li></ul>',
+            'crawl_username': 'The username used for authenticating with the source whilst crawling.',
+            'crawl_password': 'The password used for authenticating with the source whilst crawling.',
+            'crawl_authtype': 'The type of authentication used by the server. If you don\'t know what kind of authentication to use you may press the \'test\' button near \'Location\' to try and detect what kind of auth is required for accesing the source.',
+            'crawl_interval': 'Determine at what interval to crawl, if at all.',
+            'crawl_useragent': 'The User-Agent of the crawler.',
+            'crawl_verifyssl': 'Enable or disable the verification of the SSL certificate.',
+            'country': 'You may choose to pick a physical location for the source for refined searches.',
+            'bandwidth': 'The bandwidth the source has, in mbit.<br><br><ul class=\"list-group\"><b>Requirements:</b><li class=\"list-group-item\">Numbers ranging from 0 to 5000 only.</li></ul>',
+            'description': 'A description is a written or spoken account presenting characteristics and aspects of that which is being described in sufficient detail that the audience can form a mental picture, impression, or understanding of it.<br><br><ul class=\"list-group\"><b>Requirements:</b><li class=\"list-group-item\">A maximum of 360 characters is allowed.</li></ul>',
+            'crawl_wait': 'The time between requests to wait. In some cases it is best to cut the source you\'re crawling some slack.'
+        };
+
+        $('.form-control').hover(function(){
+            var id = $(this).attr('id');
+
+            for (var key in help) {
+                var obj = help[key];
+                for (var prop in obj) {
+
+                    if (id == key){
+                        $('#helptext').html('<h5><b>→ ' + key + '</b></h5>'+help[key]);
+                    }
+                }
+            }
+        }, function(){
+            $('#helptext').html('Use this form to add new sources.');
+        });
+
+    });
+    function process(res){
+        if (res.hasOwnProperty('detecturl')){
+            console.log('hetwoiei');
+            r = res['detecturl'];
+            $('#detecturl_message').html('<small style=\"color:'+r['textcolor']+'\">'+r['status']+'</small>');
+
+            console.log(r['auth']);
+            if(r['auth'] != ''){
+                var a = r['auth'];
+                if (a == 'DIGEST'){
+                    a = 'HTTP(s) DIGEST';
+                }
+                if (a == 'BASIC'){
+                    a = 'HTTP(s) BASIC';
+                }
+                $('#crawl_authtype').val(a);
+            }
+        }
+    }
+</script>
 {% endblock %}
