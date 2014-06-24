@@ -1,10 +1,12 @@
 bottle
 bottle-cork
 bottle-servefiles
+bottle-sqlalchemy
 gevent
 requests
 beautifulsoup4
 psycopg2
+psycogreen
 python-dateutil
 jinja2
 beaker

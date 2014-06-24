@@ -4,13 +4,12 @@ import requests
 from bin.urlparse import ParseUrl
 from bin.protocols import Web
 from json import dumps
-from bin.dataobjects import Sources, DataObjectManipulation
+from bin.dataobjects import DataObjectManipulation
 from bin.utils import Debug
 
 class Api():
-    def __init__(self, db, cfg):
+    def __init__(self, cfg):
         self._uri = 'post'
-        self._db = db
         self._cfg = cfg
 
     def postd(self):
@@ -19,7 +18,7 @@ class Api():
     def post_get(self, name, default=''):
         return request.POST.get(name, default).strip()
 
-    def handle_post(self, data):
+    def handle_post(self, data, db=None):
         if not 'cmd' in data:
             return None
 
@@ -76,7 +75,7 @@ class Api():
             if not 'source_name' in data:
                 return None
 
-            sources = Sources(self._db, self._cfg)
+            sources = Sources(db, self._cfg)
             sources.get_sources()
 
             for source in sources.list:

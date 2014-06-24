@@ -1,9 +1,6 @@
-from gevent import monkey
-monkey.patch_all()
-
-from bottle import error, post, get, run, static_file, abort, redirect, response, request, debug, app, route, jinja2_view, Jinja2Template, url
-
+from bottle import error, post, get, run, static_file, abort, redirect, response, request, debug, app, route, jinja2_view, Jinja2Template, url, HTTPError, hook, Bottle, jinja2_template
 from beaker.middleware import SessionMiddleware
+
 from cork import Cork
 import random
 import logging
@@ -14,14 +11,20 @@ from datetime import datetime
 from bin.bytes2human import bytes2human, human2bytes
 from bin.files import Icons
 from bin.config import Config
-from bin.db import Postgres
-from bin.dataobjects import Source, Sources, DataObjectManipulation, UrlVarParse, FlashMessage
+from bin.orm import Postgres, Source, SourceFile
+from bin.dataobjects import DataObjectManipulation, UrlVarParse, FlashMessage
+
 from bin.utils import Debug
 from bin.api import Api
 import bin.forms as Forms
 
-from bottle import hook, Bottle
+# monkey patch all the things
+from gevent import monkey
+monkey.patch_all()
+from psycogreen.gevent import patch_psycopg
+patch_psycopg()
 
+#
 @hook('after_request')
 def enable_cors():
     response.headers['X-Pirate'] = 'Yarrr'
@@ -37,21 +40,25 @@ if cfg.get('General', 'debug'):
     log.addHandler(log_handler)
     debug(True)
 
-# Init DB
-db = Postgres(cfg)
-db_init = db.init_db()
-if isinstance(db_init, Debug):
-    log.error(str(Debug))
-    sys.exit()
-
-file_sources = Sources(db, cfg)
-file_sources.get_sources()
 
 # Authentication, Authorization and Accounting. Use users.json and roles.json in users/
 aaa = Cork('users')
 
-# Init bottle app
-app = SessionMiddleware(app(), cfg.HttpSessionOptions())
+# Init bottle app + database
+app = app()
+
+database = Postgres(cfg, app)
+#
+#if isinstance(db, Debug):
+#    log.error(str(Debug))
+#    sys.exit()
+
+app = SessionMiddleware(app, cfg.HttpSessionOptions())
+
+# Init DB
+
+#file_sources = Sources(db, cfg)
+#file_sources.get_sources()
 
 # Wrapping jinja2_view for easier access
 view = functools.partial(jinja2_view, template_lookup=['templates'])
@@ -65,7 +72,7 @@ Jinja2Template.settings = {
     'autoescape': True,
 }
 
-api = Api(db, cfg)
+api = Api(cfg)
 
 icons = Icons(cfg)
 
@@ -93,7 +100,6 @@ def generate_breadcrumps(path, dir='', lastslash=True, capitalize=False):
     return crumbs
 
 @route('/')
-@view('index.html')
 def root():
     """Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
@@ -101,11 +107,11 @@ def root():
     message = 'Hi welcome to my site please don\'t fucking wreck shit kthx.'
     admin = request.environ.get('beaker.session')['username'] == 'admin'
 
-    return {
-        'title': 'Home',
-        'navigation': generate_navigation(admin),
-        'welcome_message': message
-    }
+    return jinja2_template('index.html',
+        title='Home',
+        navigation=generate_navigation(admin),
+        welcome_message=message
+    )
 
 @route('/browse/')
 def browse():
@@ -114,16 +120,13 @@ def browse():
 
     return redirect('/browse?sort=[size=desc]')
 
+
 @route('/test')
-@view('bla.html')
 def test():
-    return {
-        'form': ''
-    }
+    jinja2_template('bla.html', navigation=generate_navigation(True))
 
 @route('/browse')
-@view('browse_complicated.html')
-def browse():
+def browse(db):
     sort = None
     sort_options = {
         'size': 'total_size',
@@ -159,28 +162,33 @@ def browse():
     #"""Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
 
-    sources = file_sources.list
+    # auth kan met filter db.query(Source).filter_by(name=...)
+    sources = db.query(Source).all()
 
-    if sort:
-        sources = sorted(sources, key=lambda k: k.__dict__[sort['key']])
+#
+#    if sort:
+#        sources = sorted(sources, key=lambda k: k.__dict__[sort['key']])
+#
+#        if sort['val'] == 'desc':
+#            sources = sources[::-1]
+#    else:
+#        sources = sorted(sources, key=lambda k: random.random())
 
-        if sort['val'] == 'desc':
-            sources = sources[::-1]
-    else:
-        sources = sorted(sources, key=lambda k: random.random())
     for source in sources:
-        dom = DataObjectManipulation()
-        source = dom.humanize(source, humandates=True, dateformat='%d/%m/%Y %H:%M', humansizes=True)
+        source = DataObjectManipulation().humanize(
+            dataobject=source,
+            humandates=True, dateformat='%d/%m/%Y %H:%M',
+            humansizes=True
+        ).calc_filedistribution()
 
-    return {
-        'title': 'Browse',
-        'sources': sources,
-        'navigation': generate_navigation(admin)
-    }
+    return jinja2_template('browse_complicated.html',
+        title='Browse',
+        sources=sources,
+        navigation=generate_navigation(True))
+
 
 @route('/browse/<path:path>')
-@view('browse_directory.html')
-def browse_dir(path):
+def browse_dir(path, db):
     #to-do: fix this crap
     start_time = datetime.now()
     files = []
@@ -202,51 +210,50 @@ def browse_dir(path):
     if filepath != '/':
         filepath += '/'
 
-    for s in file_sources.list:
-        if s.name == source_name:
+    source = db.query(SourceFile).filter_by(source_name=source_name).all()
+    if source:
+        s = ''
+        if filepath != '/' and not isdir:
+            get_file = db.get_file(source_name, filepath, filename)
 
-            if filepath != '/' and not isdir:
-                get_file = db.get_file(source_name, filepath, filename)
+            if get_file:
+                url = s.crawl_password + filepath[1:] + filename
+                # update some download stats here
+                return redirect(url)
 
-                if get_file:
-                    url = s.crawl_password + filepath[1:] + filename
-                    # update some download stats here
-                    return redirect(url)
+        files = db.get_directory(source_name, filepath)
+        files.sort(key=operator.attrgetter("filename"), reverse=False)
 
-            files = db.get_directory(source_name, filepath)
-            files.sort(key=operator.attrgetter("filename"), reverse=False)
-
-            for f in files:
-                if f.isdir:
-                    if f.filename == '..':
-                        f.url_icon = theme_path + icons.additional_icons[20]
-                    else:
-                        f.url_icon = theme_path + icons.additional_icons[21]
-                    continue
-
-                if f.fileext in icons.additional_icons_exts:
-                    icon = icons.additional_icons_exts[f.fileext]
-                    icon = icons.additional_icons[icon]
-
-                    f.url_icon = theme_path + icon
+        for f in files:
+            if f.isdir:
+                if f.filename == '..':
+                    f.url_icon = theme_path + icons.additional_icons[20]
                 else:
-                    f.url_icon = theme_path + icons.file_icons[f.fileformat]
-            source = s
-            break
+                    f.url_icon = theme_path + icons.additional_icons[21]
+                continue
+
+            if f.fileext in icons.additional_icons_exts:
+                icon = icons.additional_icons_exts[f.fileext]
+                icon = icons.additional_icons[icon]
+
+                f.url_icon = theme_path + icon
+            else:
+                f.url_icon = theme_path + icons.file_icons[f.fileformat]
+        source = s
 
     load_time = (datetime.now() - start_time).total_seconds()
 
     files = sorted(files, key=lambda k: k.filename.lower())
 
-    return {
-        'load_time': load_time,
-        'title': 'Browse',
-        'path': filepath,
-        'files': files,
-        'source': source,
-        'navigation': generate_navigation(admin),
-        'breadcrumbs': generate_breadcrumps(source_name+filepath, 'browse/')
-    }
+    return jinja2_template('browse_directory.html',
+        load_time=load_time,
+        title='Browse',
+        path=filepath,
+        files=files,
+        source=source,
+        navigation=generate_navigation(admin),
+        breadcrumbs=generate_breadcrumps(source_name+filepath, 'browse/')
+    )
 
 @route('/search')
 def search():
@@ -294,8 +301,26 @@ def user_is_anonymous():
     return 'False'
 
 @route('/my_role')
-def show_current_user_role():
+def show_current_user_role(db):
     """Show current user role"""
+
+    s = Source()
+    s.name = 'Local'
+    s.crawl_protocol = 'HTTP(s)'
+    s.crawl_authtype = 'DIGEST'
+    s.crawl_username = 'admin'
+    s.crawl_password = 'test'
+    s.crawl_interval = 0
+    s.crawl_wait = 0
+    s.crawl_verifyssl = False
+    s.crawl_url = 'http://127.0.0.1/files/'
+    s.crawl_useragent = 'penis'
+    s.description = 'I am getting increasingly homosexual'
+    s.country = 'NL'
+    s.html_header = 'Mijn computer thuis!11'
+    db.add(s)
+    db.commit()
+
     session = request.environ.get('beaker.session')
     print "Session from simple_webapp", repr(session)
     aaa.require(fail_redirect='/login')
@@ -376,7 +401,12 @@ def source_add():
             for bu,te in form.data.iteritems():
                 setattr(i,bu,te)
 
-            db.add_source(i)
+            i.added = datetime.now()
+            added = db.add_source(i)
+
+            if not isinstance(added, Debug):
+                return redirect('..')
+
 
     return {
         'form_obj': form._fields,
