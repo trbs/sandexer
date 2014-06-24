@@ -210,19 +210,20 @@ def browse_dir(path, db):
     if filepath != '/':
         filepath += '/'
 
-    source = db.query(SourceFile).filter_by(source_name=source_name).all()
+    source = db.query(Source).filter_by(name=source_name).first()
+
     if source:
-        s = ''
         if filepath != '/' and not isdir:
-            get_file = db.get_file(source_name, filepath, filename)
+            get_file = db.query(SourceFile).filter_by(source_name=source_name, filename=filename, filepath=filepath)
 
             if get_file:
-                url = s.crawl_password + filepath[1:] + filename
+                url = source.crawl_password + filepath[1:] + filename
                 # update some download stats here
                 return redirect(url)
 
-        files = db.get_directory(source_name, filepath)
-        files.sort(key=operator.attrgetter("filename"), reverse=False)
+        files = db.query(SourceFile).filter_by(source_name=source_name, filepath=filepath).all()
+        #files = db.get_directory(source_name, filepath)
+        #files.sort(key=operator.attrgetter("filename"), reverse=False)
 
         for f in files:
             if f.isdir:
@@ -239,11 +240,11 @@ def browse_dir(path, db):
                 f.url_icon = theme_path + icon
             else:
                 f.url_icon = theme_path + icons.file_icons[f.fileformat]
-        source = s
+        source = source
 
     load_time = (datetime.now() - start_time).total_seconds()
 
-    files = sorted(files, key=lambda k: k.filename.lower())
+    #files = sorted(files, key=lambda k: k.filename.lower())
 
     return jinja2_template('browse_directory.html',
         load_time=load_time,
@@ -270,12 +271,11 @@ def server_static(filename):
     return static_file(filename, root='static/')
 
 @route('/login')
-@view('login.html')
 def login():
-    return {
-        'title': 'Login',
-        'navigation': [{'href': 'login', 'caption': 'Login'}]
-    }
+    return jinja2_template('login.html',
+        title='Login',
+        navigation=[{'href': 'login', 'caption': 'Login'}]
+    )
 
 @route('/login_post', method='POST')
 def login_post():
@@ -303,24 +303,6 @@ def user_is_anonymous():
 @route('/my_role')
 def show_current_user_role(db):
     """Show current user role"""
-
-    s = Source()
-    s.name = 'Local'
-    s.crawl_protocol = 'HTTP(s)'
-    s.crawl_authtype = 'DIGEST'
-    s.crawl_username = 'admin'
-    s.crawl_password = 'test'
-    s.crawl_interval = 0
-    s.crawl_wait = 0
-    s.crawl_verifyssl = False
-    s.crawl_url = 'http://127.0.0.1/files/'
-    s.crawl_useragent = 'penis'
-    s.description = 'I am getting increasingly homosexual'
-    s.country = 'NL'
-    s.html_header = 'Mijn computer thuis!11'
-    db.add(s)
-    db.commit()
-
     session = request.environ.get('beaker.session')
     print "Session from simple_webapp", repr(session)
     aaa.require(fail_redirect='/login')
@@ -332,60 +314,52 @@ def admin():
     return redirect('/admin')
 
 @route('/admin')
-@view('admin')
 def admin():
     """Only admin users can see this"""
     aaa.require(role='admin', fail_redirect='/404')
 
-    return {
-        'title': 'Admin',
-        'navigation': generate_navigation(admin=True)
-    }
+    return jinja2_template('admin.html',
+        title='Admin',
+        navigation=generate_navigation(admin=True)
+    )
+
 
 @route('/admin/sources')
-@view('sources.html')
-def sources():
+def sources(db):
     """Only admin users can see this"""
     aaa.require(role='admin', fail_redirect='/404')
 
-    sources = file_sources.list
+    sources = db.query(Source).all()
     dom = DataObjectManipulation()
 
     for source in sources:
         source = dom.humanize(source, humansizes=True)
 
-    sources = sorted(sources, key=lambda k: k.name)
+    #sources = sorted(sources, key=lambda k: k.name)
 
-    return {
-        'title': 'Admin',
-        'navigation': generate_navigation(admin=True),
-        'sources': sources
-    }
+    return jinja2_template('sources.html',
+        title='Admin',
+        navigation=generate_navigation(True),
+        sources=sources)
 
 @route('/admin/sources/edit/<path:path>')
-@view('sources_edit.html')
-def edit_source(path):
+def edit_source(path, db):
     """Only admin users can see this"""
     aaa.require(role='admin', fail_redirect='/404')
 
     name = path
-    source = None
+    source = db.query(Source).filter_by(name=name).first()
 
-    for s in file_sources.list:
-        if s.name == name:
-            source = s
-
-    return {
-        'title': 'Admin',
-        'path': path,
-        'navigation': generate_navigation(admin=True),
-        'breadcrumbs': generate_breadcrumps('/sources/edit/', 'admin/', lastslash=False, capitalize=True),
-        'source': source
-    }
+    return jinja2_template('sources_edit.html',
+        title='Admin',
+        path=path,
+        navigation=generate_navigation(admin=True),
+        breadcrumbs=generate_breadcrumps('/sources/edit/', 'admin/', lastslash=False, capitalize=True),
+        source=source
+    )
 
 @route('/admin/sources/add', method=['POST', 'GET'])
-@view('source_add.html')
-def source_add():
+def source_add(db):
     #"""Only admin users can see this"""
     #aaa.require(role='admin', fail_redirect='/login')
     flashmessages = [] # dirty hack, watch me care
@@ -397,24 +371,24 @@ def source_add():
             for k, v in form.errors.iteritems():
                 flashmessages.append(FlashMessage(k, v[0], mtype='danger'))
         else:
-            i = Source()
+            source = Source()
             for bu,te in form.data.iteritems():
-                setattr(i,bu,te)
+                setattr(source,bu,te)
 
-            i.added = datetime.now()
-            added = db.add_source(i)
+            dom = DataObjectManipulation()
+            source = dom.sanitize(source)
 
-            if not isinstance(added, Debug):
-                return redirect('..')
+            db.add(source)
+            db.commit()
+            return redirect('..')
 
-
-    return {
-        'form_obj': form._fields,
-        'title': 't',
-        'navigation': generate_navigation(admin=True),
-        'form': Forms.sources_add(),
-        'flashmessages': flashmessages
-    }
+    return jinja2_template('source_add.html',
+        form_obj=form._fields,
+        title='t',
+        navigation=generate_navigation(admin=True),
+        form=Forms.sources_add(),
+        flashmessages=flashmessages
+    )
 
 import bottle
 @bottle.post('/create_user')

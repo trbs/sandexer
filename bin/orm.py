@@ -30,6 +30,7 @@ class Postgres():
             self._db_port,
             self._db_database), echo=True
         )
+
         self.plugin = sqlalchemy.Plugin(
             self.engine, # SQLAlchemy engine created with create_engine function.
             Base.metadata, # SQLAlchemy metadata, required only if create=True.
@@ -86,7 +87,7 @@ class Source(Base):
     crawl_username = Column(sql.String())
     crawl_password = Column(sql.String())
     crawl_authtype = Column(sql.String())
-    crawl_interval = Column(sql.Float())
+    crawl_interval = Column(sql.String())
     crawl_useragent = Column(sql.String())
     crawl_verifyssl = Column(sql.Boolean())
     crawl_lastcrawl = Column(sql.DateTime())
@@ -95,7 +96,7 @@ class Source(Base):
     bandwidth = Column(sql.Integer())
     color = Column(sql.Integer())
     country = Column(sql.String())
-
+    thumbnail_url = Column(sql.String())
     filedistribution_files = Column(sql.Integer())
     filedistribution_documents = Column(sql.Integer())
     filedistribution_movies = Column(sql.Integer())
@@ -116,7 +117,7 @@ class Source(Base):
         self.crawl_username = None
         self.crawl_password = None
         self.crawl_authtype = None
-        self.crawl_interval = -1
+        self.crawl_interval = None
         self.crawl_useragent = None
         self.crawl_verifyssl = None
         self.crawl_lastcrawl = None

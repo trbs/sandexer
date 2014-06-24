@@ -71,7 +71,7 @@ class Api():
                         }
                     })
 
-        if data['cmd'][0] == 'get_source_details':
+        elif data['cmd'][0] == 'get_source_details':
             if not 'source_name' in data:
                 return None
 
@@ -85,5 +85,9 @@ class Api():
                     source_info = dom.dictionize(source)
 
                     return {'get_source_details': source_info}
+
+        elif data['cmd'][0] == 'crawl' and 'source_name' in data:
+
+            pass
 
         return None

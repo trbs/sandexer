@@ -53,7 +53,7 @@ class sources_add(Form):
 
     crawl_interval = wtf.SelectField('Crawl Interval', choices=[('None', 'None'), ('1 hour', 'Every hour'), ('2 hours', 'Every 2 hours') ,('4 hours', 'Every 4 hours'), ('12 hours', "Every 12 hours"), ('24 hours', "Every 24 hours"), ('2 days', 'Every 2 days'), ('5 days', 'Every 5 days'),('weekly', 'Every week'), ('2 weeks', 'Every 2 weeks'), ('monthly', 'Every month')], default=1, validators=[validate_crawlinterval])
 
-    crawl_wait = wtf.SelectField('Crawl Wait', choices=[('Dont', 'Don\'t wait'), ('50', '50 ms'), ('100', '100 ms'), ('150', '150 ms'), ('200', '200 ms'), ('250', '250 ms'), ('300', '300 ms')], default=1, validators=[validate_crawlwait])
+    crawl_wait = wtf.SelectField('Crawl Wait', choices=[('None', 'None'), ('50', '50 ms'), ('100', '100 ms'), ('150', '150 ms'), ('200', '200 ms'), ('250', '250 ms'), ('300', '300 ms')], default=1, validators=[validate_crawlwait])
 
     crawl_useragent = wtf.StringField('Crawl User-Agent', default=CONFIG.get('Crawler', 'default_ua'), validators=[validate_crawlua])
 

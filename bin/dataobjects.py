@@ -27,8 +27,18 @@ class DataObjectManipulation():
             d[attr] = getattr(dataobject, attr)
         return d
 
+    def sanitize(self, dataobject):
+        for attr in [a for a in dir(dataobject) if not a.startswith('__') and not a.startswith('_')]:
+            get_attr = getattr(dataobject, attr)
+
+            if isinstance(get_attr, str) or isinstance(get_attr, unicode):
+                if get_attr == 'None' or get_attr == '':
+                    setattr(dataobject, attr, None)
+        return dataobject
+
+
     def humanize(self, dataobject, humansizes=False, humandates=False, dateformat=None, humanpath=False, humanfile=False):
-        for attr in [a for a in dir(dataobject) if not a.startswith('__')]:
+        for attr in [a for a in dir(dataobject) if not a.startswith('__') and not a.startswith('_')]:
             if humandates:
                 get_attr = getattr(dataobject, attr)
                 format = '%d %b %Y %H:%M' if not dateformat else dateformat

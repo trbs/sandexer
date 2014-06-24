@@ -13,7 +13,7 @@ from time import sleep
 from datetime import datetime
 from bs4 import BeautifulSoup
 import zlib
-from bin.dataobjects import DiscoveredFile
+from bin.orm import SourceFile
 from bin.utils import Debug
 from bin.protocols import Web
 
@@ -106,14 +106,8 @@ class WebCrawl():
                 # go for opendir
                 discovered_files = self.walk_opendir()
 
-            if isinstance(discovered_files, Debug):
-                # if that also fails, quit trying
-                return discovered_files
 
-            if len(discovered_files) == 0:
-                return 0
-            else:
-                return self._db.add_files(discovered_files, self.name)
+            return discovered_files
 
     def parse_protoindex(self, protoindex):
         pi = protoindex.split('\n')
@@ -148,7 +142,7 @@ class WebCrawl():
 
                 modified = datetime.fromtimestamp(float(spl[1]))
 
-                discovered_files.append(DiscoveredFile(self.name, filepath, filename, isdir, filesize, modified, fileperm, fileformat, ext))
+                discovered_files.append(SourceFile(self.name, filepath, filename, isdir, filesize, modified, fileperm, fileformat, ext))
 
         except Exception as ex:
             return Debug(str(ex))
@@ -320,7 +314,7 @@ class WebCrawl():
             chunks = [opendir_html]
 
         if rel == '':
-            discovered_files.append(DiscoveredFile(self.name, '/', None, True))
+            discovered_files.append(SourceFile(self.name, '/', None, True))
 
         for chunk in chunks:
             soup = BeautifulSoup(chunk)
@@ -390,7 +384,7 @@ class WebCrawl():
                     else:
                         dirs.append(rel+filename)
 
-                discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None, fileformat=fileformat, fileext=ext))
+                discovered_files.append(SourceFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None, fileformat=fileformat, fileext=ext))
 
         return [discovered_files, dirs]
 
