@@ -55,61 +55,35 @@
         {% endfor %}
         <br>
         {% endif %}
-        <div class="col-xs-6">
             {% from "_formhelpers.html" import render_field %}
             <form class="form-horizontal" action="add" method="post">
-                <dl>
-                    <div>
-                        <h3>General</h3>
-                        <div style="margin-left:40px;width:400px;">
-                            {{ render_field(form.name) }}
-                            {{ render_field(form.description) }}
-                            {{ render_field(form.crawl_protocol) }}
 
-                            <div style="width:300px;margin-left:-15px;margin-bottom:16px;" class="input-group">
-                                <input name="crawl_url" id="location" placeholder="Location" type="text" class="form-control">
-                                <span class="input-group-btn">
-                                    <button class="btn btn-default" onclick="detecturl()" type="button">Test</button>
-                                </span>
-                            </div>
-                            <div id="detecturl_message" style="margin-left:10px;margin-bottom:16px;"></div>
-                            {{ render_field(form.bandwidth) }}
-                            {{ render_field(form.country) }}
+                <div class="form-group">
+                    <label for="inputName" class="control-label col-xs-2">Name</label>
+                    <div class="col-xs-10">
+                        <input type="name" class="form-control" id="inputName" placeholder="Email">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputPassword" class="control-label col-xs-2">Password</label>
+                    <div class="col-xs-10">
+                        <input type="password" class="form-control" id="inputPassword" placeholder="Password">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-xs-offset-2 col-xs-10">
+                        <div class="checkbox">
+                            <label><input type="checkbox"> Remember me</label>
                         </div>
                     </div>
-
-                    <br>
-
-                    <h3>Authentication</h3>
-                    <div style="margin-left:40px;width:400px;">
-                        {{ render_field(form.crawl_username) }}
-                        {{ render_field(form.crawl_password) }}
-                        {{ render_field(form.crawl_authtype) }}
+                </div>
+                <div class="form-group">
+                    <div class="col-xs-offset-2 col-xs-10">
+                        <button type="submit" class="btn btn-primary">Login</button>
                     </div>
-
-                    <br>
-
-                    <h3>Crawling</h3>
-                    <div style="margin-left:40px;width:400px;">
-                        {{ render_field(form.crawl_interval) }}
-                        {{ render_field(form.crawl_wait) }}
-                        {{ render_field(form.crawl_useragent) }}
-                        {{ render_field(form.crawl_verifyssl) }}
-                    </div>
-                </dl>
+                </div>
                 <p><input type="submit" value="Add">
             </form>
-
-        </div>
-
-        <div class="col-xs-6">
-            <h3>Help</h3>
-            <div style="margin-left:16px;">
-                <div id="helptext">
-                    Use this form to add new sources.
-                </div>
-            </div>
-        </div>
     </div>
 
 </div>
