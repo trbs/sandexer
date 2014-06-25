@@ -13,8 +13,9 @@ from time import sleep
 from datetime import datetime
 from bs4 import BeautifulSoup
 import zlib
+from bin.urlparse import ParseUrl
 from bin.orm import SourceFile
-from bin.utils import Debug
+from bin.utils import Debug, isInt
 from bin.protocols import Web
 
 #to-do:
@@ -52,29 +53,38 @@ class WebCrawl():
     def __init__(self, **kwargs):
         self.name = kwargs['name']
         self._cfg = kwargs['cfg']
-        self._db = kwargs['db']
-        self._web = Web(db=self._db, cfg=self._cfg)
+        self._web = Web(cfg=self._cfg)
 
         self.crawl_url = kwargs['url'] if 'url' in kwargs else None
         self.crawl_ua = kwargs['ua'] if 'ua' in kwargs else self._cfg.get('Crawler', 'default_ua')
         self.crawl_sslverify = kwargs['ssl_verify'] if 'ssl_verify' in kwargs else self._cfg.get('Crawler', 'verify_ssl')
 
         if 'auth_type' in kwargs:
-            if kwargs['auth_type'] == 'BASIC':
+            if kwargs['auth_type'] == 'HTTP_BASIC':
                 self.crawl_auth_type = HTTPBasicAuth
-            elif kwargs['auth_type'] == 'DIGEST':
+            elif kwargs['auth_type'] == 'HTTP_DIGEST':
                 self.crawl_auth_type = HTTPDigestAuth
+            else:
+                self.crawl_auth_type = None
         else:
             self.crawl_auth_type = None
 
         if 'auth_username' in kwargs and 'auth_password' in kwargs:
-            self.crawl_auth = self.crawl_auth_type(kwargs['auth_username'], kwargs['auth_password'])
+            username = kwargs['auth_username']
+            password = kwargs['auth_password']
+            if username and password:
+                self.crawl_auth = self.crawl_auth_type(kwargs['auth_username'], kwargs['auth_password'])
+            else:
+                self.crawl_auth = None
         else:
             self.crawl_auth = None
 
         self.crawl_wait = kwargs['crawl_wait'] if 'crawl_wait' in kwargs else 0
 
     def http(self):
+        if not isinstance(self.crawl_url, ParseUrl):
+            self.crawl_url = ParseUrl(self.crawl_url)
+
         response_head = self._web.request(
             url=self.crawl_url.reluri,
             request_method=requests.head,
@@ -142,7 +152,7 @@ class WebCrawl():
 
                 modified = datetime.fromtimestamp(float(spl[1]))
 
-                discovered_files.append(SourceFile(self.name, filepath, filename, isdir, filesize, modified, fileperm, fileformat, ext))
+                discovered_files.append(DiscoveredFile(self.name, filepath, filename, isdir, filesize, modified, fileperm, fileformat, ext))
 
         except Exception as ex:
             return Debug(str(ex))
@@ -158,9 +168,13 @@ class WebCrawl():
             response_indexer = self._web.request(
                 url=url + self._cfg.get('Protoindex', 'file_name'),
                 request_method=requests.get,
-                headers={'User-Agent': self.crawl_ua,
-                         'Accept-encoding': 'gzip,deflate'},
-                stream=True)
+                headers={'User-Agent': self.crawl_ua, 'Accept-encoding': 'gzip,deflate'},
+                stream=True,
+                crawl_auth=self.crawl_auth,
+                crawl_auth_type=self.crawl_auth_type,
+                verifyssl=self.crawl_sslverify,
+                redirects=False
+            )
 
             if isinstance(response_indexer, Debug):
                 return response_indexer
@@ -314,7 +328,7 @@ class WebCrawl():
             chunks = [opendir_html]
 
         if rel == '':
-            discovered_files.append(SourceFile(self.name, '/', None, True))
+            discovered_files.append(DiscoveredFile(self.name, '/', None, True))
 
         for chunk in chunks:
             soup = BeautifulSoup(chunk)
@@ -384,9 +398,23 @@ class WebCrawl():
                     else:
                         dirs.append(rel+filename)
 
-                discovered_files.append(SourceFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None, fileformat=fileformat, fileext=ext))
+                discovered_files.append(DiscoveredFile(self.name, '/' if not rel else rel, filename, isdir, size, modified, None, fileformat=fileformat, fileext=ext))
 
         return [discovered_files, dirs]
+
+class DiscoveredFile():
+    def __init__(self, source_name, path, name, isdir, size=None, modified=None, perm=None, fileformat=None, fileext=None, fileadded=None):
+            self.source_name = source_name
+            self.filepath = path
+            self.filename = name
+            self.filesize = int(size) if isInt(size) else size
+            self.isdir = isdir
+            self.filemodified = modified
+            self.fileperm = int(perm) if isInt(perm) else perm
+            self.fileformat = fileformat
+            self.fileext = fileext
+            self.fileadded = fileadded
+            self.url_icon = None
 
 class Discovery():
     def __init__(self):

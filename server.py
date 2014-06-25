@@ -7,6 +7,7 @@ import logging
 import logging.handlers
 import functools, sys, operator
 from datetime import datetime
+import urllib
 
 from bin.bytes2human import bytes2human, human2bytes
 from bin.files import Icons
@@ -38,7 +39,7 @@ log_handler = logging.handlers.RotatingFileHandler('debug.out', maxBytes=2048576
 log = logging.getLogger('file_logger')
 if cfg.get('General', 'debug'):
     log.addHandler(log_handler)
-    debug(True)
+    debug(False)
 
 
 # Authentication, Authorization and Accounting. Use users.json and roles.json in users/
@@ -120,9 +121,8 @@ def browse():
 
     return redirect('/browse?sort=[size=desc]')
 
-
 @route('/test')
-def test():
+def test(db):
     jinja2_template('bla.html', navigation=generate_navigation(True))
 
 @route('/browse')
@@ -217,16 +217,14 @@ def browse_dir(path, db):
             get_file = db.query(SourceFile).filter_by(source_name=source_name, filename=filename, filepath=filepath)
 
             if get_file:
-                url = source.crawl_password + filepath[1:] + filename
+                url = source.crawl_password + filepath[1:] + urllib.quote_plus(filename)
                 # update some download stats here
                 return redirect(url)
 
-        files = db.query(SourceFile).filter_by(source_name=source_name, filepath=filepath).all()
-        #files = db.get_directory(source_name, filepath)
-        #files.sort(key=operator.attrgetter("filename"), reverse=False)
+        files = db.query(SourceFile).filter_by(source_name=source_name, filepath=urllib.quote_plus(filepath)).all()
 
         for f in files:
-            if f.isdir:
+            if f.is_directory:
                 if f.filename == '..':
                     f.url_icon = theme_path + icons.additional_icons[20]
                 else:
@@ -242,9 +240,20 @@ def browse_dir(path, db):
                 f.url_icon = theme_path + icons.file_icons[f.fileformat]
         source = source
 
-    load_time = (datetime.now() - start_time).total_seconds()
+    def test(k):
+        if k.filename == None:
+            k.filename = '..'
+        else:
+            k.filename.lower()
+        return k
 
-    #files = sorted(files, key=lambda k: k.filename.lower())
+    files = sorted(files, key=lambda k: test(k).filename)
+
+    dom = DataObjectManipulation()
+    for sourcefile in files:
+        sourcefile = dom.humanize(sourcefile, humansizes=True, humandates=True, humanfile=True, humanpath=True)
+
+    load_time = (datetime.now() - start_time).total_seconds()
 
     return jinja2_template('browse_directory.html',
         load_time=load_time,
@@ -285,11 +294,14 @@ def login_post():
     aaa.login(username, password, success_redirect='/', fail_redirect='/login')
 
 @route('/post', method='POST')
-def post():
+def post(db):
     #aaa.require(fail_redirect='/404')
-
     data = request.POST
-    result = api.handle_post(data)
+    result = api.handle_post(db=db, database=database, data=data)
+
+    if isinstance(result, Debug):
+        print 'NOOOOOOOOOOOOOO'
+        return ';('
 
     return result
 
@@ -347,10 +359,31 @@ def edit_source(path, db):
     """Only admin users can see this"""
     aaa.require(role='admin', fail_redirect='/404')
 
-    name = path
+    name = None
+    action = None
+
+    if '/' in path:
+        spl = path.split('/')
+        name = spl[0]
+        action = spl[1]
+    else:
+        name = path
+
     source = db.query(Source).filter_by(name=name).first()
 
-    return jinja2_template('sources_edit.html',
+    if action:
+        if action == 'crawl' and source:
+            return jinja2_template('source_crawl.html',
+                title='Admin',
+                source_name = name,
+                path=path,
+                navigation=generate_navigation(admin=True),
+                breadcrumbs=generate_breadcrumps('/sources/edit/' + name + '/crawl', 'admin/', lastslash=False, capitalize=True)
+            )
+        else:
+            return redirect('/admin/sources')
+
+    return jinja2_template('source_edit.html',
         title='Admin',
         path=path,
         navigation=generate_navigation(admin=True),
@@ -470,7 +503,7 @@ def error404(error):
 #c.ftp()
 
 def main():
-    run(app=app, host='192.168.178.30', quiet=False, reloader=False, server='gevent')
+    run(app=app, host='192.168.178.30', quiet=True, reloader=False, server='gevent')
 
 if __name__ == "__main__":
     main()

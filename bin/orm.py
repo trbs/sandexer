@@ -2,7 +2,8 @@ import sqlalchemy as sql
 import bottle_sqlalchemy as sqlalchemy
 from sqlalchemy import create_engine, Column, Sequence
 from sqlalchemy.ext.declarative import declarative_base
-from bin.utils import isInt
+import psycopg2, random, urllib, os
+from bin.utils import isInt, generate_string, Debug
 from dataobjects import DataObjectManipulation
 
 from datetime import datetime
@@ -28,7 +29,7 @@ class Postgres():
             self._db_pass,
             self._db_host,
             self._db_port,
-            self._db_database), echo=True
+            self._db_database), echo=False
         )
 
         self.plugin = sqlalchemy.Plugin(
@@ -41,6 +42,113 @@ class Postgres():
         )
 
         app.install(self.plugin)
+
+    def bulk_add(self, db, files, source_name):
+        # Everything in here should be save from sqli as long
+        # as source_name is alphanummeric
+
+        start = datetime.now()
+        temp = '/tmp/%s.crawl' % generate_string(random.randrange(5,12))
+
+        conn = psycopg2.connect('host=%s port=%s dbname=%s user=%s password=%s' % (
+            self._cfg.get('Postgres', 'host'),
+            self._cfg.get('Postgres', 'port'),
+            self._cfg.get('Postgres', 'db'),
+            self._cfg.get('Postgres', 'user'),
+            self._cfg.get('Postgres', 'pass')))
+
+        f = open(temp, 'w')
+
+        inserts = 0
+        total_size = 0
+        total_files = 0
+        filedistribution = [0, 0, 0, 0, 0]
+        id = 0
+
+        cur = conn.cursor()
+        sql = 'DELETE FROM files WHERE source_name = \'%s\'' % source_name
+        cur.execute(sql)
+        conn.commit()
+
+        sql = 'SELECT id from \"files\" order by id desc limit 1;'
+        cur.execute(sql)
+        rows = cur.fetchone()
+
+        if rows:
+            id = rows[0] + 1
+
+        for df in files:
+            if id == 10002:
+                e = 'e'
+            isdir = str(df.isdir).upper()
+
+            df.filename = urllib.quote_plus(df.filename) if df.filename else None
+            df.filepath = urllib.quote_plus(df.filepath) if df.filepath else None
+
+            line = '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' % (str(id), source_name, isdir, df.filename, df.filesize, df.filepath, df.filemodified, df.fileperm, df.fileadded, df.fileext, df.fileformat, str(0))
+            f.write(line)
+
+            inserts += 1
+            if df.filesize:
+                total_size += df.filesize if df.filesize != 4096 else 0
+
+            if not df.isdir and '.' in df.filename:
+                filedistribution[df.fileformat] += 1
+                total_files += 1
+
+            id += 1
+        f.close()
+
+        # to-do
+        # 1. https://pythonhosted.org/psycopg2/cursor.html#cursor.copy_expert
+        #    should work without having to use postgres superuser privs
+        cur = conn.cursor()
+        try:
+            sql = 'COPY \"files\" FROM \'%s\' DELIMITER \'|\' NULL \'None\';' % (temp)
+
+            cur.execute(sql)
+
+        except Exception as e:
+            e = 'e'
+
+        os.remove(temp)
+        end = datetime.now()
+        Debug('Source %s - %s seconds for %s item INSERTS' % (source_name, str((end - start).total_seconds()),inserts), info=True)
+
+        # Update the total size of the indexed Source
+        sql = 'UPDATE source SET total_size=%s where name=\'%s\';' % (total_size, source_name)
+        cur.execute(sql)
+
+        # Update the total amount of files of the indexed source
+        sql = 'UPDATE source SET total_files=%s where name=\'%s\';' % (total_files, source_name)
+        cur.execute(sql)
+
+        # Update the distribution of files
+        sql = '''
+                UPDATE source SET (
+                    filedistribution_files,
+                    filedistribution_documents,
+                    filedistribution_movies,
+                    filedistribution_music,
+                    filedistribution_pictures) =
+                (%s, %s, %s, %s, %s) where name=\'%s\';
+                ''' % (filedistribution[0],
+                       filedistribution[1],
+                       filedistribution[2],
+                       filedistribution[3],
+                       filedistribution[4],
+                       source_name)
+
+        cur.execute(sql)
+
+        # Update the last crawled time
+        sql = 'UPDATE source SET crawl_lastcrawl=\'%s\' WHERE name=\'%s\';' % (start, source_name)
+        cur.execute(sql)
+        conn.commit()
+        end = datetime.now()
+        print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
+
+        db.expire_all()
 
 class SourceFile(Base):
     """Represents a file or directory"""

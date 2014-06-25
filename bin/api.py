@@ -4,6 +4,8 @@ import requests
 from bin.urlparse import ParseUrl
 from bin.protocols import Web
 from json import dumps
+from bin.orm import Source, SourceFile
+from bin.crawler import WebCrawl
 from bin.dataobjects import DataObjectManipulation
 from bin.utils import Debug
 
@@ -18,7 +20,7 @@ class Api():
     def post_get(self, name, default=''):
         return request.POST.get(name, default).strip()
 
-    def handle_post(self, data, db=None):
+    def handle_post(self, data, db=None, database=None):
         if not 'cmd' in data:
             return None
 
@@ -86,8 +88,32 @@ class Api():
 
                     return {'get_source_details': source_info}
 
-        elif data['cmd'][0] == 'crawl' and 'source_name' in data:
+        elif data['cmd'][0] == 'crawlnow' and 'source_name' in data:
+            source_name = data['source_name'][0]
+            source = db.query(Source).filter_by(name=source_name).first()
 
+            if source:
+                webcrawl = WebCrawl(
+                    name=source_name,
+                    cfg=self._cfg,
+
+                    url = source.crawl_url,
+                    ua = source.crawl_useragent,
+                    auth_type=source.crawl_authtype,
+                    auth_username=source.crawl_username,
+                    auth_password=source.crawl_password,
+                    crawl_wait=source.crawl_wait,
+                    ssl_verify=source.crawl_verifyssl
+                )
+                res = webcrawl.http()
+                if isinstance(res, Debug):
+                    return Debug
+
+                database.bulk_add(db, res, source_name)
+
+            return dumps({'crawlnow': {
+                'status': 'busy'
+            }})
             pass
 
         return None

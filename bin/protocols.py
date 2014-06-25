@@ -4,10 +4,9 @@ import requests
 
 
 class Web():
-    def __init__(self, db, cfg):
-        self._db = db
+    def __init__(self, cfg):
         self._cfg = cfg
-        self.ua = cfg.get('Crawler', 'User-Agent')
+        self.ua = cfg.get('Crawler', 'default_ua')
 
     def request(self, url, request_method, crawl_auth=None, crawl_auth_type=None, crawl_ua='', verifyssl=False, headers=None, stream=False, redirects=True):
         if not crawl_ua:

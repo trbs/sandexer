@@ -65,7 +65,7 @@ class Icons():
             'Logos/adobe_flash_copyrighted-128.png', #4 flash
             'Logos/adobe_illustrator_copyrighted-128.png', #5 illustrator
             'Programming/php-128.png', #6 PHP
-            'Programming/python.png', #7 Python
+            'Programming/python-128.png', #7 Python
             'Programming/java_coffee_cup_logo_copyrighted-128.png', #8 Java
             'Data/database-128.png', #9 DB
             'Data/grid-128.png', #10 excel
