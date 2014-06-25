@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div style="height:20px;"></div>
+    <div class="container">
+        <ol class="breadcrumb">
+            <li><a href="/admin">Admin</a></li>
+            {% for crumb in breadcrumbs %}
+            {% if crumb['active'] %}
+            <li class="active">{{crumb['name']}}</li>
+            {% else %}
+            <li><a href="/{{crumb['href']}}">{{crumb['name']}}</a></li>
+            {% endif %}
+            {% endfor %}
+        </ol>
+        <div class="row">
+            <button id="btn_crawlnow" class="btn btn-default btn-primary btn-xs"><span class="glyphicon glyphicon-th"></span> Crawl now</button>
+        </div>
+    </div>
+
+    <script>
+        var source_name = '{{source_name}}';
+        function process(res){
+            if (res.hasOwnProperty('crawlnow')){
+                console.log('busy crawling');
+            }
+        }
+
+        $('#btn_crawlnow').click(
+                function(){
+                    console.log('e');
+                    post('cmd=crawlnow&source_name=' + source_name);
+                }
+        );
+
+    </script>
+{% endblock %}
