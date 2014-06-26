@@ -7,7 +7,8 @@ import logging
 import logging.handlers
 import functools, sys, operator
 from datetime import datetime
-import urllib
+from PIL import Image
+import urllib, os
 
 from bin.bytes2human import bytes2human, human2bytes
 from bin.files import Icons
@@ -39,7 +40,7 @@ log_handler = logging.handlers.RotatingFileHandler('debug.out', maxBytes=2048576
 log = logging.getLogger('file_logger')
 if cfg.get('General', 'debug'):
     log.addHandler(log_handler)
-    debug(False)
+    debug(True)
 
 
 # Authentication, Authorization and Accounting. Use users.json and roles.json in users/
@@ -47,21 +48,11 @@ aaa = Cork('users')
 
 # Init bottle app + database
 app = app()
-
 database = Postgres(cfg, app)
-#
-#if isinstance(db, Debug):
-#    log.error(str(Debug))
-#    sys.exit()
-
 app = SessionMiddleware(app, cfg.HttpSessionOptions())
+api = Api(cfg)
+icons = Icons(cfg)
 
-# Init DB
-
-#file_sources = Sources(db, cfg)
-#file_sources.get_sources()
-
-# Wrapping jinja2_view for easier access
 view = functools.partial(jinja2_view, template_lookup=['templates'])
 
 Jinja2Template.defaults = {
@@ -72,10 +63,6 @@ Jinja2Template.defaults = {
 Jinja2Template.settings = {
     'autoescape': True,
 }
-
-api = Api(cfg)
-
-icons = Icons(cfg)
 
 def generate_navigation(admin):
     return [{'href': '/', 'caption': 'Home'},
@@ -217,8 +204,9 @@ def browse_dir(path, db):
             get_file = db.query(SourceFile).filter_by(source_name=source_name, filename=filename, filepath=filepath)
 
             if get_file:
-                url = source.crawl_password + filepath[1:] + urllib.quote_plus(filename)
-                # update some download stats here
+                # file found, redirect to url
+                url = source.crawl_url + filepath[1:] + urllib.quote_plus(filename)
+                # maybe update some download stats here
                 return redirect(url)
 
         files = db.query(SourceFile).filter_by(source_name=source_name, filepath=urllib.quote_plus(filepath)).all()
@@ -391,36 +379,80 @@ def edit_source(path, db):
         source=source
     )
 
+def verify_upload(upload, dimension=512):
+    errors = []
+    name, ext = os.path.splitext(upload.filename)
+
+    valid_extensions = ['.jpg', '.png', '.jpeg', '.gif']
+
+    if ext in valid_extensions:
+        img=Image.open(upload.file)
+
+        if not img.format in [z[1:].upper() for z in valid_extensions]:
+            errors.append(Debug('The upload was not a valid image. Valid extensions are: %s' % ' '.join(valid_extensions)))
+        else:
+            if img.size[0] > dimension or img.size[1] > dimension:
+                errors.append(Debug('Image exceeded dimensions 512x512.'))
+            else:
+                return {'img': img}
+    else:
+        errors.append('Extension \'%s\' not allowed. Valid extensions are: %s' % (ext, ' '.join(valid_extensions)))
+
+    return errors
+
 @route('/admin/sources/add', method=['POST', 'GET'])
 def source_add(db):
     #"""Only admin users can see this"""
     #aaa.require(role='admin', fail_redirect='/login')
-    flashmessages = [] # dirty hack, watch me care
+    errors = [] # dirty hack, watch me care
 
     form = Forms.sources_add(request.forms)
+
     if request.method == 'POST':
         validate = form.validate()
         if not validate:
             for k, v in form.errors.iteritems():
-                flashmessages.append(FlashMessage(k, v[0], mtype='danger'))
+                errors.append(FlashMessage(k, v[0], mtype='danger'))
         else:
-            source = Source()
+            i = Source()
             for bu,te in form.data.iteritems():
-                setattr(source,bu,te)
+                setattr(i,bu,te)
 
             dom = DataObjectManipulation()
-            source = dom.sanitize(source)
+            i = dom.sanitize(i)
 
-            db.add(source)
-            db.commit()
-            return redirect('..')
+            upload_errors = []
+
+            if 'thumbnail' in request.files:
+                upload = request.files['thumbnail']
+                verified = verify_upload(upload)
+                if isinstance(verified, dict):
+                    name, ext = os.path.splitext(upload.filename)
+                    path = 'static/user_upload/icon_%s%s' % (form.data['name'], ext)
+
+                    if not os.path.isdir('static/user_upload'): os.popen('mkdir static/user_upload')
+                    if os.path.isfile(path): os.remove(path)
+
+                    verified['img'].save(path)
+                    i.thumbnail_url = '/' + path
+
+                elif isinstance(verified, Debug):
+                    errors.append(FlashMessage('icon', verified.message, mtype='danger'))
+                else:
+                    errors.append(FlashMessage('icon', 'unknnown error', mtype='danger'))
+
+            if not errors:
+                db.add(i)
+                db.commit()
+                return redirect('..')
 
     return jinja2_template('source_add.html',
         form_obj=form._fields,
         title='t',
         navigation=generate_navigation(admin=True),
         form=Forms.sources_add(),
-        flashmessages=flashmessages
+        flashmessages=errors,
+        breadcrumbs=generate_breadcrumps('/sources/add', 'admin/', lastslash=False, capitalize=True)
     )
 
 import bottle
@@ -460,9 +492,9 @@ def debug():
     except:
         pass
 
-    return {
-        'debuglist': reversed(debuglist)
-    }
+    return jinja2_template('debug.html',
+        debuglist=reversed(debuglist)
+    )
 
 @bottle.error(404)
 @bottle.error(405)

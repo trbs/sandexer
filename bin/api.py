@@ -41,12 +41,12 @@ class Api():
                     return dumps({
                         'detecturl':{
                             'status': 'Status: Error',
-                            'auth': None,
+                            'auth': '',
                             'textcolor': 'red'
                         }
                     })
 
-                auth = None
+                auth = ''
                 status = []
 
                 if 'www-authenticate' in res.headers:
@@ -59,7 +59,7 @@ class Api():
 
                     return dumps({
                         'detecturl':{
-                            'status': '<br>'.join(status),
+                            'status': ' - '.join(status),
                             'auth': auth,
                             'textcolor': 'green'
                         }

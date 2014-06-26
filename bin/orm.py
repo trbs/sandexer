@@ -29,7 +29,7 @@ class Postgres():
             self._db_pass,
             self._db_host,
             self._db_port,
-            self._db_database), echo=False
+            self._db_database), echo=True
         )
 
         self.plugin = sqlalchemy.Plugin(

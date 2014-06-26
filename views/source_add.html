@@ -45,6 +45,16 @@
 </style>
 <div style="height:20px;"></div>
 <div class="container">
+    <ol class="breadcrumb">
+        <li><a href="/admin">Admin</a></li>
+        {% for crumb in breadcrumbs %}
+        {% if crumb['active'] %}
+        <li class="active">{{crumb['name']}}</li>
+        {% else %}
+        <li><a href="/{{crumb['href']}}">{{crumb['name']}}</a></li>
+        {% endif %}
+        {% endfor %}
+    </ol>
     <div class="row">
         {% if flashmessages %}
 
@@ -53,39 +63,53 @@
             <b>{{message.key}}: </b>{{message.message}}<br>
         </div>
         {% endfor %}
-        <br>
         {% endif %}
+        <div class="span4">
             {% from "_formhelpers.html" import render_field %}
-            <form class="form-horizontal" action="add" method="post">
+            <form class="form-horizontal" action="add" method="post" enctype="multipart/form-data">
+                <h3>General</h3>
+                You may leave the stuff you don't know unfilled.<br><br>
+                {{ render_field(form.name) }}
+                {{ render_field(form.description) }}
+                {{ render_field(form.thumbnail) }}
 
                 <div class="form-group">
-                    <label for="inputName" class="control-label col-xs-2">Name</label>
+                    <label for="location" class="control-label col-xs-2">Location*</label>
                     <div class="col-xs-10">
-                        <input type="name" class="form-control" id="inputName" placeholder="Email">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="inputPassword" class="control-label col-xs-2">Password</label>
-                    <div class="col-xs-10">
-                        <input type="password" class="form-control" id="inputPassword" placeholder="Password">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <div class="col-xs-offset-2 col-xs-10">
-                        <div class="checkbox">
-                            <label><input type="checkbox"> Remember me</label>
+                        <input name="crawl_url" id="location" type="text" class="form-control">
+                        <div style="overflow:hidden;">
+                            <span class="input-group-btn" style="width:114px;float:left;">
+                                <a style="margin-top:6px;" class="btn btn-xs btn-default" onclick="detecturl()" href="#">Test Connection</a>
+                            </span>
+                            <div id="detecturl_message" style="height:26px;float:left;padding-top:7px;">
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <div class="col-xs-offset-2 col-xs-10">
-                        <button type="submit" class="btn btn-primary">Login</button>
-                    </div>
-                </div>
-                <p><input type="submit" value="Add">
-            </form>
-    </div>
 
+                {{ render_field(form.crawl_protocol) }}
+                {{ render_field(form.bandwidth) }}
+                {{ render_field(form.country) }}
+                <br>
+                <h3>Authentication</h3>
+                If the source does not require any authentication, you can just leave this empty.<br><br>
+                {{ render_field(form.crawl_username) }}
+                {{ render_field(form.crawl_password) }}
+                {{ render_field(form.crawl_authtype) }}
+                <br>
+                <h3>Crawl Options</h3>
+                {{ render_field(form.crawl_interval) }}
+                {{ render_field(form.crawl_wait) }}
+                {{ render_field(form.crawl_useragent) }}
+                {{ render_field(form.crawl_verifyssl) }}
+                <br>
+                <div class="col-xs-offset-2 col-xs-10" style="margin-bottom:40px;">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -95,7 +119,7 @@
             post('cmd=detecturl&url=' + url);
         }
         else{
-            $('#detecturl_message').html('<small style=\"color:red\">o_0?</small>');
+            $('#detecturl_message').html('<small style=\"color:red\">No.</small>');
         }
     }
 
@@ -135,20 +159,35 @@
     });
     function process(res){
         if (res.hasOwnProperty('detecturl')){
-            console.log('hetwoiei');
             r = res['detecturl'];
             $('#detecturl_message').html('<small style=\"color:'+r['textcolor']+'\">'+r['status']+'</small>');
 
-            console.log(r['auth']);
             if(r['auth'] != ''){
+
                 var a = r['auth'];
                 if (a == 'DIGEST'){
-                    a = 'HTTP(s) DIGEST';
+                    a = 'HTTP_DIGEST';
                 }
-                if (a == 'BASIC'){
-                    a = 'HTTP(s) BASIC';
+                else if (a == 'BASIC'){
+                    a = 'HTTP_BASIC';
                 }
+
+                var user = $('#crawl_username').val();
+                var pass = $('#crawl_password').val();
+
+                if( user == ''){
+                    $('#crawl_username').val('?');
+                }
+                if( pass == ''){
+                    $('#crawl_password').val('?');
+                }
+
                 $('#crawl_authtype').val(a);
+            }
+            else{
+                $('#crawl_username').val('');
+                $('#crawl_password').val('');
+                $('#crawl_authtype').val('None');
             }
         }
     }

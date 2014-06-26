@@ -28,26 +28,23 @@
         text-decoration: none;
     }
     img.fileicon{
-        width:32px;
-        height:32px;
+        width:20px;
+        height:20px;
     }
     div.filethumbnail{
-        margin-top:6px;
-        margin-bottom:6px;
+        margin-top:2px;
+        margin-bottom:2px;
     }
     .breadcrumb {
         margin-bottom:10px;
     }
 </style>
 
-<div style="height:10px;"></div>
+<div style="height:20px;"></div>
 
 <div class="container">
     <div class="row">
-
-
         <!--<div style="border:1px solid red;height: 200px;"></div>-->
-
         {% if files %}
             <ol class="breadcrumb">
                 <li><a href="/browse">Sources</a></li>
@@ -84,7 +81,7 @@
             </thead>
             <tbody data-link="row" class="rowlink">
                 {% for f in files %}
-                    <tr rel="popover" title="Preview">
+                    <tr rel="popover" title="">
                         <td class="rowlink-skip" style="background-color:white;">
                             <div id="{{f.filename}}" class="filethumbnail">
                                 <img class="fileicon" src="{{f.url_icon}}"/>

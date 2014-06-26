@@ -43,25 +43,26 @@ class sources_add(Form):
     crawl_protocol = wtf.SelectField('Protocol', choices=[('HTTP(s)', "HTTP(s)"), ('FTP', "FTP"), ('SMB', 'SMB'), ('LOCAL', 'LOCAL')], default=1, validators=[wtf.validators.DataRequired(), validate_protocol])
 
     crawl_url = wtf.StringField('Location',
-        validators=[wtf.validators.DataRequired()],
-        default=''
+        validators=[wtf.validators.DataRequired()]
     )
 
-    crawl_username = wtf.StringField('Auth Username')
-    crawl_password = wtf.StringField('Auth Password')
-    crawl_authtype = wtf.SelectField('Auth Type', choices=[('None', 'None'), ('HTTP_BASIC', "HTTP(s) BASIC"), ('HTTP_DIGEST', "HTTP(s) DIGEST")], default=1, validators=[validate_authtype])
+    crawl_username = wtf.StringField('Username')
+    crawl_password = wtf.StringField('Password')
+    crawl_authtype = wtf.SelectField('Type', choices=[('None', 'None'), ('HTTP_BASIC', "HTTP(s) BASIC"), ('HTTP_DIGEST', "HTTP(s) DIGEST")], default=1, validators=[validate_authtype])
 
-    crawl_interval = wtf.SelectField('Crawl Interval', choices=[('None', 'None'), ('1 hour', 'Every hour'), ('2 hours', 'Every 2 hours') ,('4 hours', 'Every 4 hours'), ('12 hours', "Every 12 hours"), ('24 hours', "Every 24 hours"), ('2 days', 'Every 2 days'), ('5 days', 'Every 5 days'),('weekly', 'Every week'), ('2 weeks', 'Every 2 weeks'), ('monthly', 'Every month')], default=1, validators=[validate_crawlinterval])
+    crawl_interval = wtf.SelectField('Interval', choices=[('None', 'None'), ('1 hour', 'Every hour'), ('2 hours', 'Every 2 hours') ,('4 hours', 'Every 4 hours'), ('12 hours', "Every 12 hours"), ('24 hours', "Every 24 hours"), ('2 days', 'Every 2 days'), ('5 days', 'Every 5 days'),('weekly', 'Every week'), ('2 weeks', 'Every 2 weeks'), ('monthly', 'Every month')], default=1, validators=[validate_crawlinterval])
 
-    crawl_wait = wtf.SelectField('Crawl Wait', choices=[('None', 'None'), ('50', '50 ms'), ('100', '100 ms'), ('150', '150 ms'), ('200', '200 ms'), ('250', '250 ms'), ('300', '300 ms')], default=1, validators=[validate_crawlwait])
+    crawl_wait = wtf.SelectField('Wait', choices=[('None', 'None'), ('50', '50 ms'), ('100', '100 ms'), ('150', '150 ms'), ('200', '200 ms'), ('250', '250 ms'), ('300', '300 ms')], default=1, validators=[validate_crawlwait])
 
-    crawl_useragent = wtf.StringField('Crawl User-Agent', default=CONFIG.get('Crawler', 'default_ua'), validators=[validate_crawlua])
+    crawl_useragent = wtf.StringField('User-Agent', default=CONFIG.get('Crawler', 'default_ua'), validators=[validate_crawlua])
 
     crawl_verifyssl = wtf.BooleanField('Verify SSL', default=False)
 
     bandwidth = wtf.StringField('Bandwidth', [wtf.validators.length(min=0, max=4)])
 
-    country = wtf.SelectField('Country', choices=[('', ''), ('nl', 'nl')])
+    country = wtf.SelectField('Country', choices=[('None', 'Empty'), ('nl', 'nl')], default=1)
 
-    description = wtf.StringField('description', [wtf.validators.length(min=0, max=360)])
+    description = wtf.StringField('Description', [wtf.validators.length(min=0, max=360)])
+
+    thumbnail = wtf.FileField('Image')
 

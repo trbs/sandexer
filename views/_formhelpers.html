@@ -6,12 +6,12 @@
 {% endif %}
 
 <div class="form-group {% if field.errors %}error{% endif %}">
-    {% if with_label %}
+    {% if with_label and field.type != 'BooleanField'%}
         <label for="{{ field.id }}" class="control-label col-xs-2">
-            {{ field.label.text }}{% if field.flags.required %} *{% endif %}:
+            {{ field.label.text }}{% if field.flags.required %}*{% endif %}
         </label>
     {% endif %}
-
+    <div class="col-xs-10">
     {% if field.type == 'StringField' %}
         {% set class_ = kwargs.pop('class_', 'form-control') %}
     {% elif field.type == 'SelectField' %}
@@ -34,9 +34,9 @@
     {% else %}
 
     {% if field.type in ('TextField', 'TextAreaField', 'PasswordField') %}
-    <div class="col-xs-10">
+
     {% set class_ = class_ + ' input-xlarge form-control' %}
-    </div>
+
 
     {% elif field.type == 'FileField' %}
     {% set class_ = class_ + ' input-file form-control' %}
@@ -45,17 +45,16 @@
     {% if field.type == 'SelectField' %}
     {{ field(class_=class_, **kwargs) }}
     {% else %}
-    <div class="col-xs-10">
-    {{ field(class_=class_, placeholder=placeholder, **kwargs) }}
-    </div>
+        {{ field(class_=class_, placeholder=placeholder, **kwargs) }}
     {% endif %}
 
     {% endif %}
     {% if field.errors %}
-    <span class="error help-inline">{{ field.errors|join(', ') }}</span>
+        <span class="error help-inline">{{ field.errors|join(', ') }}</span>
     {% endif %}
     {% if field.description %}
-    <p class="help-block">{{ field.description|safe }}</p>
+        <p class="help-block">{{ field.description|safe }}</p>
     {% endif %}
+    </div>
 </div>
 {%- endmacro %}

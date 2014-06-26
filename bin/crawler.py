@@ -241,6 +241,11 @@ class WebCrawl():
                 dirs.pop(0)
                 continue
 
+            # dont go backwards
+            if '..' in dirs[0]:
+                dirs.pop(0)
+                continue
+
             # detect a loop
             if dirs[0] and isinstance(Discovery().detect_loop(self.name, dirs[0]), Debug):
                 d = Discovery()
@@ -253,10 +258,13 @@ class WebCrawl():
                     self.crawl_url.reluri = self.crawl_url.reluri[:-1]
 
                 # fetch opendir
-                response = self.request(
+                response = self._web.request(
                     url=self.crawl_url.reluri + dirs[0],
                     request_method=requests.get,
-                    redirects=False
+                    redirects=False,
+                    crawl_auth=self.crawl_auth,
+                    crawl_auth_type=self.crawl_auth_type,
+                    crawl_ua=self.crawl_ua
                 )
 
                 if isinstance(response, Debug):
@@ -297,7 +305,6 @@ class WebCrawl():
 
     def parse_opendir(self, response, discovered_files, dirs, rel=''):
         opendir_html = response.content
-
         # if the opendir contains a lot of files, divide the html in chunks so beautifulsoup parses faster
         # unncesary for fast machines but optimization is always nice
         page_size = len(opendir_html)
@@ -312,12 +319,21 @@ class WebCrawl():
             if isinstance(verify, Debug):
                 return verify
 
-            spl = opendir_html.split('<img')
+            spl = []
+            spl_tag = ''
+            if '<img' in opendir_html:
+                spl = opendir_html.split('<img')
+                spl_tag = '<img'
+            elif '<a' in opendir_html:
+                spl = opendir_html.split('<a')
+                spl_tag = '<a'
+            else:
+                return [discovered_files, dirs]
 
             avg = len(spl[randrange(1,len(spl))]) + 15
             chunk_div = chunk_size / avg
 
-            chunks = [''.join(spl[x:x + chunk_div]) for x in xrange(0, len(spl), chunk_div)]
+            chunks = [spl_tag.join(spl[x:x + chunk_div]) for x in xrange(0, len(spl), chunk_div)]
         else:
             soup = BeautifulSoup(opendir_html)
             verify = self.verify_opendir(soup, response)
@@ -326,9 +342,6 @@ class WebCrawl():
                 return verify
 
             chunks = [opendir_html]
-
-        if rel == '':
-            discovered_files.append(DiscoveredFile(self.name, '/', None, True))
 
         for chunk in chunks:
             soup = BeautifulSoup(chunk)
@@ -377,12 +390,12 @@ class WebCrawl():
                         try:
                             size = human2bytes(size)
                         except:
-                            pass
+                            size = None
 
                 try:
                     modified = dateutil.parser.parse(modified)
                 except:
-                    pass
+                    modified = None
 
                 rel = '/' if not rel else rel
                 if not rel.startswith('/'): rel = '/' + rel

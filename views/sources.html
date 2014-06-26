@@ -8,6 +8,9 @@
         border-top: 1px solid #ddd;
         vertical-align: middle;
     }
+    .blue {
+        color: #428bca;
+    }
 </style>
 <div style="height: 20px;"></div>
 <div class="container">
@@ -15,7 +18,7 @@
         <li class="active"><a href="/admin">Admin</a></li>
         <li>Sources</li>
     </ol>
-
+    {% if sources %}
     <table id="navigationTable" class="table table-hover">
         <thead>
             <tr>
@@ -44,6 +47,13 @@
             {% endfor %}
         </tbody>
     </table>
+    <br>
+    <div class="span4" style="float:right;">
+        <a href="./sources/add"><button id="btn_view_tags" class="btn btn-default btn-primary btn-xs"><span class="glyphicon glyphicon-plus"></span> Add a source</button></a>
+    </div>
+    {% else %}
+        No sources to show yet. <a href="./sources/add">Try adding one.</a>
+    {% endif %}
 </div>
 
 {% endblock %}
