@@ -78,12 +78,11 @@ class Postgres():
             id = rows[0] + 1
 
         for df in files:
-            if id == 10002:
-                e = 'e'
             isdir = str(df.isdir).upper()
 
             df.filename = urllib.quote_plus(df.filename) if df.filename else None
             df.filepath = urllib.quote_plus(df.filepath) if df.filepath else None
+            df.fileext = urllib.quote_plus(df.fileext) if df.fileext else None
 
             line = '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' % (str(id), source_name, isdir, df.filename, df.filesize, df.filepath, df.filemodified, df.fileperm, df.fileadded, df.fileext, df.fileformat, str(0))
             f.write(line)

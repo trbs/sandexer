@@ -150,7 +150,10 @@ class WebCrawl():
                     ext = filename.split('.')[-1].lower()
                     fileformat = ff.get_fileformat(ext)
 
-                modified = datetime.fromtimestamp(float(spl[1]))
+                try:
+                    modified = datetime.fromtimestamp(float(spl[1]))
+                except:
+                    modified = None
 
                 discovered_files.append(DiscoveredFile(self.name, filepath, filename, isdir, filesize, modified, fileperm, fileformat, ext))
 
