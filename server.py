@@ -16,6 +16,9 @@ from bin.config import Config
 from bin.orm import Postgres, Source, SourceFile
 from bin.dataobjects import DataObjectManipulation, UrlVarParse, FlashMessage
 
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
+
 from bin.utils import Debug
 from bin.api import Api
 import bin.forms as Forms
@@ -200,7 +203,7 @@ def browse_dir(path, db):
     source = db.query(Source).filter_by(name=source_name).first()
 
     if source:
-        if filepath != '/' and not isdir:
+        if not isdir:
             get_file = db.query(SourceFile).filter_by(source_name=source_name, filename=filename, filepath=filepath)
 
             if get_file:
@@ -254,14 +257,15 @@ def browse_dir(path, db):
     )
 
 @route('/search')
-def search():
+def search(db):
     """Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
+    admin = request.environ.get('beaker.session')['username'] == 'admin'
 
-    view = Views.Options
-    view.is_admin = request.environ.get('beaker.session')['username'] == 'admin'
-
-    return template('search', view=view)
+    return jinja2_template('search.html',
+        title='Search',
+        navigation=generate_navigation(admin)
+    )
 
 @route('/static/<filename:path>')
 def server_static(filename):
@@ -342,6 +346,36 @@ def sources(db):
         navigation=generate_navigation(True),
         sources=sources)
 
+@route('/admin/sources/')
+def sources():
+    return redirect('/admin/sources')
+
+@route('/admin/sources/delete')
+def delete_source():
+    aaa.require(role='admin', fail_redirect='/404')
+    return redirect('/admin/sources')
+
+
+@route('/admin/sources/delete/<path:path>', method=['GET', 'POST'])
+def delete_source(path, db):
+    aaa.require(role='admin', fail_redirect='/404')
+
+    name = path
+    source = db.query(Source).filter_by(name=name).first()
+
+    if request.method == 'POST' and source:
+        db.delete(source)
+        db.execute('DELETE FROM \"files\" WHERE source_name=\'%s\'' % name)
+        db.commit()
+        return redirect('../')
+    else:
+        return jinja2_template('source_delete.html',
+            source=source,
+            name=name,
+            navigation=generate_navigation(True),
+    )
+
+
 @route('/admin/sources/edit/<path:path>')
 def edit_source(path, db):
     """Only admin users can see this"""
@@ -403,7 +437,7 @@ def verify_upload(upload, dimension=512):
 @route('/admin/sources/add', method=['POST', 'GET'])
 def source_add(db):
     #"""Only admin users can see this"""
-    #aaa.require(role='admin', fail_redirect='/login')
+    aaa.require(role='admin', fail_redirect='/login')
     errors = [] # dirty hack, watch me care
 
     form = Forms.sources_add(request.forms)

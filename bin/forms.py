@@ -46,8 +46,8 @@ class sources_add(Form):
         validators=[wtf.validators.DataRequired()]
     )
 
-    crawl_username = wtf.StringField('Username')
-    crawl_password = wtf.StringField('Password')
+    crawl_username = wtf.StringField('User')
+    crawl_password = wtf.StringField('Pass')
     crawl_authtype = wtf.SelectField('Type', choices=[('None', 'None'), ('HTTP_BASIC', "HTTP(s) BASIC"), ('HTTP_DIGEST', "HTTP(s) DIGEST")], default=1, validators=[validate_authtype])
 
     crawl_interval = wtf.SelectField('Interval', choices=[('None', 'None'), ('1 hour', 'Every hour'), ('2 hours', 'Every 2 hours') ,('4 hours', 'Every 4 hours'), ('12 hours', "Every 12 hours"), ('24 hours', "Every 24 hours"), ('2 days', 'Every 2 days'), ('5 days', 'Every 5 days'),('weekly', 'Every week'), ('2 weeks', 'Every 2 weeks'), ('monthly', 'Every month')], default=1, validators=[validate_crawlinterval])
@@ -58,11 +58,11 @@ class sources_add(Form):
 
     crawl_verifyssl = wtf.BooleanField('Verify SSL', default=False)
 
-    bandwidth = wtf.StringField('Bandwidth', [wtf.validators.length(min=0, max=4)])
+    bandwidth = wtf.StringField('Speed', [wtf.validators.length(min=0, max=4)])
 
     country = wtf.SelectField('Country', choices=[('None', 'Empty'), ('nl', 'nl')], default=1)
 
-    description = wtf.StringField('Description', [wtf.validators.length(min=0, max=360)])
+    description = wtf.StringField('Info', [wtf.validators.length(min=0, max=360)])
 
     thumbnail = wtf.FileField('Image')
 

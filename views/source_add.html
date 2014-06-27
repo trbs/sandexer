@@ -8,19 +8,12 @@
         margin-bottom: 6px;
     }
     .form-control {
-        display: block;
-        max-width: 300px;
         height: 34px;
         padding: 6px 12px;
-        font-size: 14px;
     }
-    .penis{
-        width:180px;
-    }
-    @media (min-width: 1200px) {
-        .container {
-            width: 100%;
-        }
+    .form-horizontal .control-label {
+        text-align: left;
+        font-size: 12px;
     }
     .span3{
         background: #b3cdda;
@@ -31,13 +24,10 @@
     .span3, .span9{
         min-height: 250px;
     }
-    .container {
-        margin-right: auto;
-        margin-left: auto;
+    div.helpitem{
+        margin-bottom:20px;
     }
-    .container, .navbar-static-top .container, .navbar-fixed-top .container, .navbar-fixed-bottom .container {
-        width: 940px;
-    }
+
 
     h5,h4,h3,h2,h1{
         color: #428bca;
@@ -64,56 +54,142 @@
         </div>
         {% endfor %}
         {% endif %}
-        <div class="span4">
+        <div class="col-xs-6">
             {% from "_formhelpers.html" import render_field %}
             <form class="form-horizontal" action="add" method="post" enctype="multipart/form-data">
-                <h3>General</h3>
-                You may leave the stuff you don't know unfilled.<br><br>
-                {{ render_field(form.name) }}
-                {{ render_field(form.description) }}
-                {{ render_field(form.thumbnail) }}
+                <div class="well">
+                    <h3>General</h3>
+                    * is required.<br><br>
+                    {{ render_field(form.name) }}
+                    {{ render_field(form.description) }}
+                    {{ render_field(form.thumbnail) }}
 
-                <div class="form-group">
-                    <label for="location" class="control-label col-xs-2">Location*</label>
-                    <div class="col-xs-10">
-                        <input name="crawl_url" id="location" type="text" class="form-control">
-                        <div style="overflow:hidden;">
-                            <span class="input-group-btn" style="width:114px;float:left;">
-                                <a style="margin-top:6px;" class="btn btn-xs btn-default" onclick="detecturl()" href="#">Test Connection</a>
-                            </span>
-                            <div id="detecturl_message" style="height:26px;float:left;padding-top:7px;">
+                    <div class="form-group">
+                        <label for="location" class="control-label col-xs-2">Location*</label>
+                        <div class="col-xs-10">
+                            <input name="crawl_url" id="location" type="text" class="form-control">
+                            <div style="overflow:hidden;">
+                                <span class="input-group-btn" style="width:114px;float:left;">
+                                    <a style="margin-top:6px;" class="btn btn-xs btn-default" onclick="detecturl()" href="#">Test Connection</a>
+                                </span>
+                                <div id="detecturl_message" style="height:26px;float:left;padding-top:7px;">
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {{ render_field(form.crawl_protocol) }}
-                {{ render_field(form.bandwidth) }}
-                {{ render_field(form.country) }}
-                <br>
-                <h3>Authentication</h3>
-                If the source does not require any authentication, you can just leave this empty.<br><br>
-                {{ render_field(form.crawl_username) }}
-                {{ render_field(form.crawl_password) }}
+                    {{ render_field(form.crawl_protocol) }}
+                    {{ render_field(form.bandwidth) }}
+                    {{ render_field(form.country) }}
+                </div>
+                <div class="well">
+                    <h3>Authentication</h3>
+                    If the source does not require any authentication, you should leave this empty.<br><br>
+                    {{ render_field(form.crawl_username) }}
+                    {{ render_field(form.crawl_password) }}
                 {{ render_field(form.crawl_authtype) }}
-                <br>
-                <h3>Crawl Options</h3>
-                {{ render_field(form.crawl_interval) }}
-                {{ render_field(form.crawl_wait) }}
-                {{ render_field(form.crawl_useragent) }}
-                {{ render_field(form.crawl_verifyssl) }}
-                <br>
+                </div>
+                <div class="well">
+                    <h3>Crawl Options</h3>
+                    {{ render_field(form.crawl_interval) }}
+                    {{ render_field(form.crawl_wait) }}
+                    {{ render_field(form.crawl_useragent) }}
+                    {{ render_field(form.crawl_verifyssl) }}
+                </div>
                 <div class="col-xs-offset-2 col-xs-10" style="margin-bottom:40px;">
                     <button type="submit" class="btn btn-primary">Submit</button>
                 </div>
-
             </form>
+        </div>
+        <div class="col-xs-6">
+            <div class="well">
+                <h3>Help</h3>
+                <div class="helpitem">
+                    <h5><b>→ General → name</b></h5>
+                    The name of this source.<br><br>
+                    <ul class="list-group">
+                        <li class="list-group-item">Alphanummeric and underscores only</li>
+                        <li class="list-group-item">A minimum of 3 characters and a maximum of 14 characters.</li>
+                    </ul>
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ General → Info</b></h5>
+                    Use this to describe the server. This text will be shown in the server browser.<br><br>
+                    <ul class="list-group">
+                        <li class="list-group-item">A maximum of 360 characters is allowed.</li>
+                    </ul>
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ General → Image</b></h5>
+                    Upload a thumbnail image for the source.<br><br>
+                    <ul class="list-group">
+                        <li class="list-group-item">Must be a valid image that is no larger than 512x512.</li>
+                    </ul>
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ General → Location</b></h5>
+                    The location to the source.
+                    <div style="margin-left:20px;margin-top:10px;">
+                        <b>HTTP(s):</b>
+                        <h4><span style="margin-left:20px;margin-top:6px;" class="label label-default">http://example.org/files/</span></h4>
+                        <br>
+                        <b>FTP:</b><h4>
+                        <span style="margin-left:20px;margin-top:6px;" class="label label-default">ftp://example.org/</span></h4>
+                    </div>
+                    <br>
+                    Use the 'test connection' button to see if everything works correctly before adding the server.
+                    <br><br>
+                    Linking directly to a protoindex file is allowed.
+                    <br>
+                    <br>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            Must start with a valid scheme (<b>http://, https://, ftp://, smb://</b>)
+                        </li>
+                    </ul>
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ General → Protocol</b></h5>
+                    Pick any of the available protocols.
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ General → Speed</b></h5>
+                    Use this to specify how fast the source is, in mbit.<br><br>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            Must be an integer ranging from 0 to 5000.
+                        </li>
+                    </ul>
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ General → Country</b></h5>
+                    Useful for searching for a nearby source.<br><br>
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ Authentication → Type</b></h5>
+                    The type of authentication to use. If you don't know what to use, use the 'test connection' button near 'Location' to detect what kind of authentication is needed for accessing this source.<br><br>
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ Crawler → Interval</b></h5>
+                    Determine at what interval to crawl, if at all.<br><br>
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ Crawler → User-Agent</b></h5>
+                    The useragent to use while crawling the source.<br><br>
+                </div>
+                <div class="helpitem">
+                    <h5><b>→ Crawler → Wait</b></h5>
+                    The time between individual requests to wait. In some cases it is best to cut the source some slack.<br><br>
+                </div>
+
+            </div>
         </div>
     </div>
 </div>
 
 <script>
     function detecturl(){
+        // to-do: needs more (client-side) validation. Server side is handled fine at the moment.
         var url = $('#location').val();
         if(url != ''){
             post('cmd=detecturl&url=' + url);
@@ -123,40 +199,6 @@
         }
     }
 
-    $(document).ready(function(){
-        var help = {
-            'name': 'The name of this source.<br><br><ul class=\"list-group\"><b>Requirements:</b><li class=\"list-group-item\">Alphanummeric and underscores only</li><li class=\"list-group-item\">A minimum of 3 characters and a maximum of 14</li></ul>',
-            'crawl_protocol': 'Pick any of the available protocols.',
-            'crawl_url':'The location to the source. Examples:<div style="margin-left:20px;margin-top:10px;"><b>HTTP(s):</b><h4><span style="margin-left:20px;" class="label label-default">http://domain.org/files/</span></h4><br><b>FTP:</b><h4><span style="margin-left:20px;" class="label label-default">ftp://domain.org/</span></h4></div><br>You may also directly link to a protoindex file.<br><br><ul class=\"list-group\"><b>Requirements:</b><li class=\"list-group-item\">Must start with a valid scheme (<b>http://, https://, ftp://, smb://</b>)</li></ul>',
-            'crawl_username': 'The username used for authenticating with the source whilst crawling.',
-            'crawl_password': 'The password used for authenticating with the source whilst crawling.',
-            'crawl_authtype': 'The type of authentication used by the server. If you don\'t know what kind of authentication to use you may press the \'test\' button near \'Location\' to try and detect what kind of auth is required for accesing the source.',
-            'crawl_interval': 'Determine at what interval to crawl, if at all.',
-            'crawl_useragent': 'The User-Agent of the crawler.',
-            'crawl_verifyssl': 'Enable or disable the verification of the SSL certificate.',
-            'country': 'You may choose to pick a physical location for the source for refined searches.',
-            'bandwidth': 'The bandwidth the source has, in mbit.<br><br><ul class=\"list-group\"><b>Requirements:</b><li class=\"list-group-item\">Numbers ranging from 0 to 5000 only.</li></ul>',
-            'description': 'A description is a written or spoken account presenting characteristics and aspects of that which is being described in sufficient detail that the audience can form a mental picture, impression, or understanding of it.<br><br><ul class=\"list-group\"><b>Requirements:</b><li class=\"list-group-item\">A maximum of 360 characters is allowed.</li></ul>',
-            'crawl_wait': 'The time between requests to wait. In some cases it is best to cut the source you\'re crawling some slack.'
-        };
-
-        $('.form-control').hover(function(){
-            var id = $(this).attr('id');
-
-            for (var key in help) {
-                var obj = help[key];
-                for (var prop in obj) {
-
-                    if (id == key){
-                        $('#helptext').html('<h5><b>→ ' + key + '</b></h5>'+help[key]);
-                    }
-                }
-            }
-        }, function(){
-            $('#helptext').html('Use this form to add new sources.');
-        });
-
-    });
     function process(res){
         if (res.hasOwnProperty('detecturl')){
             r = res['detecturl'];

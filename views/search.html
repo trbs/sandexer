@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    div.search{
+        width:600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    div.search_buttons{
+        margin-top:20px;
+        margin-left: 240px;
+
+    }
+    pre{
+        border: 1px solid #e3e3e3;
+    }
+</style>
+<div style="height:40px;"></div>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="search">
+                <pre>
+      ____________________                    .__
+     /   _____/\_   _____/____ _______   ____ |  |__
+     \_____  \  |    __)_\__  \\_  __ \_/ ___\|  |  \
+     /        \ |        \/ __ \|  | \/\  \___|   Y  \
+    /_______  //_______  (____  /__|    \___  >___|  /
+            \/         \/     \/            \/     \/
+                </pre>
+                <div class="well">
+                    <div class="input-group">
+                        <input class="form-control" type="text" placeholder="">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button">
+                                    <span class="glyphicon glyphicon-search"></span>
+                                </button>
+                            </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="well">
+                <h4>Search Options</h4>
+                <div class="input-group">
+                    <input type="text" class="form-control">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button">
+                                <span class="glyphicon glyphicon-search"></span>
+                            </button>
+                        </span>
+
+                </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

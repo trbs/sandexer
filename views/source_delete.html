@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div style="height:20px;"></div>
+<div class="container">
+    <div class="row">
+        {% if source %}
+            Are you sure you want to delete '<b>{{name}}</b>' ?
+            <br>
+            <form action="{{name}}" method="post">
+                <div class="form-group" style="margin-top:6px;">
+                    <button id="btn_crawlnow" class="btn btn-danger btn-sm">Yes, delete it</button>
+                </div>
+            </form>
+        {% else %}
+            Source '{{name}}' not found. Probably already deleted.
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
