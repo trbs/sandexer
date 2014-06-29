@@ -16,9 +16,6 @@ from bin.config import Config
 from bin.orm import Postgres, Source, SourceFile
 from bin.dataobjects import DataObjectManipulation, UrlVarParse, FlashMessage
 
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import SQLAlchemyError
-
 from bin.utils import Debug
 from bin.api import Api
 import bin.forms as Forms
@@ -56,7 +53,7 @@ app = SessionMiddleware(app, cfg.HttpSessionOptions())
 api = Api(cfg)
 icons = Icons(cfg)
 
-view = functools.partial(jinja2_view, template_lookup=['templates'])
+#view = functools.partial(jinja2_view, template_lookup=['templates'])
 
 Jinja2Template.defaults = {
     'url': url,
@@ -171,11 +168,12 @@ def browse(db):
             humansizes=True
         ).calc_filedistribution()
 
+    sources = [z for z in sources if z.crawl_protocol == 'HTTP(s)']
+
     return jinja2_template('browse_complicated.html',
         title='Browse',
         sources=sources,
         navigation=generate_navigation(True))
-
 
 @route('/browse/<path:path>')
 def browse_dir(path, db):
@@ -208,7 +206,7 @@ def browse_dir(path, db):
 
             if get_file:
                 # file found, redirect to url
-                url = source.crawl_url + filepath[1:] + urllib.quote_plus(filename)
+                url = source.crawl_url + filepath + urllib.quote_plus(filename)
                 # maybe update some download stats here
                 return redirect(url)
 
@@ -262,10 +260,24 @@ def search(db):
     aaa.require(fail_redirect='/login')
     admin = request.environ.get('beaker.session')['username'] == 'admin'
 
+
+    #res = db.query(SourceFile).filter(~SourceFile.filename.contains('nfo.txt')).all()
+
     return jinja2_template('search.html',
         title='Search',
         navigation=generate_navigation(admin)
     )
+
+@route('/search/<path:path>')
+def search(db, path):
+    """Only authenticated users can see this"""
+    aaa.require(fail_redirect='/login')
+
+    name = path
+    res = db.query(SourceFile).filter(SourceFile.filename.like('%nfo.txt%')).all()
+
+    admin = request.environ.get('beaker.session')['username'] == 'admin'
+
 
 @route('/static/<filename:path>')
 def server_static(filename):
@@ -355,7 +367,6 @@ def delete_source():
     aaa.require(role='admin', fail_redirect='/404')
     return redirect('/admin/sources')
 
-
 @route('/admin/sources/delete/<path:path>', method=['GET', 'POST'])
 def delete_source(path, db):
     aaa.require(role='admin', fail_redirect='/404')
@@ -420,11 +431,15 @@ def verify_upload(upload, dimension=512):
     valid_extensions = ['.jpg', '.png', '.jpeg', '.gif']
 
     if ext in valid_extensions:
-        img=Image.open(upload.file)
+        img = None
+        try:
+            img=Image.open(upload.file)
+        except Exception as e:
+            errors.append(Debug(str(e)))
 
-        if not img.format in [z[1:].upper() for z in valid_extensions]:
+        if img and not img.format in [z[1:].upper() for z in valid_extensions]:
             errors.append(Debug('The upload was not a valid image. Valid extensions are: %s' % ' '.join(valid_extensions)))
-        else:
+        elif img:
             if img.size[0] > dimension or img.size[1] > dimension:
                 errors.append(Debug('Image exceeded dimensions 512x512.'))
             else:
@@ -460,20 +475,24 @@ def source_add(db):
             if 'thumbnail' in request.files:
                 upload = request.files['thumbnail']
                 verified = verify_upload(upload)
+
                 if isinstance(verified, dict):
                     name, ext = os.path.splitext(upload.filename)
                     path = 'static/user_upload/icon_%s%s' % (form.data['name'], ext)
 
-                    if not os.path.isdir('static/user_upload'): os.popen('mkdir static/user_upload')
-                    if os.path.isfile(path): os.remove(path)
-
-                    verified['img'].save(path)
-                    i.thumbnail_url = '/' + path
-
+                    if not os.path.isdir('static/user_upload'):
+                        os.popen('mkdir static/user_upload')
+                    if os.path.isfile(path):
+                        os.remove(path)
+                    try:
+                        verified['img'].save(path)
+                        i.thumbnail_url = '/' + path
+                    except:
+                        errors.append(FlashMessage('icon', 'unknown error, pick another image', mtype='danger'))
                 elif isinstance(verified, Debug):
                     errors.append(FlashMessage('icon', verified.message, mtype='danger'))
                 else:
-                    errors.append(FlashMessage('icon', 'unknnown error', mtype='danger'))
+                    errors.append(FlashMessage('icon', 'unknown error, pick another image', mtype='danger'))
 
             if not errors:
                 db.add(i)
@@ -512,7 +531,6 @@ def logout():
     aaa.logout(success_redirect='/login')
 
 @route('/admin/debug')
-@view('debug.html')
 def debug():
     """Only admins can see this"""
     aaa.require(role='admin', fail_redirect='/404')
@@ -538,11 +556,10 @@ def debug():
 @bottle.error(503)
 @bottle.error(504)
 @bottle.error(505)
-@view('error.html')
 def error404(error):
-    return {
-        'title': 'Error'
-    }
+    return jinja2_template('error.html',
+        title='Error'
+    )
 
 #import bin.test3
 
@@ -569,7 +586,7 @@ def error404(error):
 #c.ftp()
 
 def main():
-    run(app=app, host='192.168.178.30', quiet=True, reloader=False, server='gevent')
+    run(app=app, host='192.168.178.30', quiet=False, reloader=False, server='gevent')
 
 if __name__ == "__main__":
     main()

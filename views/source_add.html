@@ -53,7 +53,9 @@
             <b>{{message.key}}: </b>{{message.message}}<br>
         </div>
         {% endfor %}
+        <br>
         {% endif %}
+
         <div class="col-xs-6">
             {% from "_formhelpers.html" import render_field %}
             <form class="form-horizontal" action="add" method="post" enctype="multipart/form-data">
@@ -201,6 +203,7 @@
 
     function process(res){
         if (res.hasOwnProperty('detecturl')){
+            console.log('yep');
             r = res['detecturl'];
             $('#detecturl_message').html('<small style=\"color:'+r['textcolor']+'\">'+r['status']+'</small>');
 
