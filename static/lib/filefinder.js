@@ -44,6 +44,9 @@ $('#btn_help').click(function(){
     $('#help').css('display', 'block');
 });
 
+function goto_uri(uri){
+    window.location.href = uri;
+}
 
 function check_form(show_errors){
     var warnings = [];

@@ -8,15 +8,16 @@ import logging.handlers
 import functools, sys, operator
 from datetime import datetime
 from PIL import Image
-import urllib, os
+from urllib import quote_plus, unquote_plus
+import os
 
 from bin.bytes2human import bytes2human, human2bytes
 from bin.files import Icons
 from bin.config import Config
-from bin.orm import Postgres, Source, SourceFile
-from bin.dataobjects import DataObjectManipulation, UrlVarParse, FlashMessage
+from bin.orm import Postgres, Source, SourceFile, or_
+from bin.dataobjects import DataObjectManipulation, var_parse, FlashMessage
 
-from bin.utils import Debug
+from bin.utils import Debug, set_icon, sort_alpha_keygetter
 from bin.api import Api
 import bin.forms as Forms
 
@@ -51,7 +52,6 @@ app = app()
 database = Postgres(cfg, app)
 app = SessionMiddleware(app, cfg.HttpSessionOptions())
 api = Api(cfg)
-icons = Icons(cfg)
 
 #view = functools.partial(jinja2_view, template_lookup=['templates'])
 
@@ -124,7 +124,7 @@ def browse(db):
         'added': 'added'
     }
 
-    query = UrlVarParse(request.query)
+    query = var_parse(request.query)
 
     if 'sort' in query:
         sort = query['sort']
@@ -187,9 +187,6 @@ def browse_dir(path, db):
     filename = ''
     isdir = False
 
-    theme = 'blue'
-    theme_path = '/static/icons/%s/128/' % theme
-
     if path.endswith('/'):
         isdir = True
     else:
@@ -206,37 +203,19 @@ def browse_dir(path, db):
 
             if get_file:
                 # file found, redirect to url
-                url = source.crawl_url + filepath + urllib.quote_plus(filename)
+                url = source.crawl_url + filepath + quote_plus(filename)
                 # maybe update some download stats here
                 return redirect(url)
 
-        files = db.query(SourceFile).filter_by(source_name=source_name, filepath=urllib.quote_plus(filepath)).all()
+        files = db.query(SourceFile).filter_by(source_name=source_name,
+            filepath=
+            quote_plus(filepath)
+        ).all()
 
-        for f in files:
-            if f.is_directory:
-                if f.filename == '..':
-                    f.url_icon = theme_path + icons.additional_icons[20]
-                else:
-                    f.url_icon = theme_path + icons.additional_icons[21]
-                continue
-
-            if f.fileext in icons.additional_icons_exts:
-                icon = icons.additional_icons_exts[f.fileext]
-                icon = icons.additional_icons[icon]
-
-                f.url_icon = theme_path + icon
-            else:
-                f.url_icon = theme_path + icons.file_icons[f.fileformat]
+        files = set_icon(cfg, files)
         source = source
 
-    def test(k):
-        if k.filename == None:
-            k.filename = '..'
-        else:
-            k.filename.lower()
-        return k
-
-    files = sorted(files, key=lambda k: test(k).filename)
+    files = sorted(files, key=lambda k: sort_alpha_keygetter(k).filename)
 
     dom = DataObjectManipulation()
     for sourcefile in files:
@@ -248,6 +227,7 @@ def browse_dir(path, db):
         load_time=load_time,
         title='Browse',
         path=filepath,
+        path_quoted=quote_plus(filepath),
         files=files,
         source=source,
         navigation=generate_navigation(admin),
@@ -260,24 +240,108 @@ def search(db):
     aaa.require(fail_redirect='/login')
     admin = request.environ.get('beaker.session')['username'] == 'admin'
 
+    vars = var_parse(request.query)
+    errors = []
 
-    #res = db.query(SourceFile).filter(~SourceFile.filename.contains('nfo.txt')).all()
+    if 'query' in vars:
+        if not len(vars['query']) >= 0:
+            errors.append(FlashMessage('Search', 'String must contain 3 characters or more', mtype="warning"))
+        else:
+            max_results = 200
+            start = datetime.now()
+
+            # build the query
+            q = db.query(SourceFile)
+
+            if 'server' in vars:
+                servers = vars['server']
+
+                if isinstance(servers, list):
+                    opor = or_()
+
+                    for server in servers:
+                        if 3 <= len(server) <= 14:
+                            opor.append(SourceFile.source_name == server)
+
+                    q = q.filter(opor)
+
+            if 'extension' in vars:
+                exts = vars['extension']
+
+                if isinstance(vars['extension'], list):
+                    opor = or_()
+
+                    for ext in exts:
+                        if 1 <= len(ext) <= 10:
+                            opor.append(SourceFile.fileext == ext)
+
+                    q = q.filter(opor)
+
+            if 'category' in vars:
+                cats = vars['category']
+
+                if isinstance(cats, list):
+                    if not 'all' in cats:
+                        opor = or_()
+
+                        categories = {
+                            'all': 0,
+                            'documents': 1,
+                            'movies': 2,
+                            'music': 3,
+                            'pictures': 4
+                        }
+
+                        for cat in cats:
+                            if cat in categories:
+                                opor.append(SourceFile.fileformat == categories[cat])
+
+                        q = q.filter(opor)
+
+            if 'path' in vars:
+                path = vars['path']
+
+                if isinstance(path, str):
+                    if len(path) > 3:
+                        path = quote_plus(path).lower()
+                        q = q.filter(SourceFile.filepath_low.like(path+'%'))
+
+            # fetch results
+            search_query = quote_plus(vars['query']).lower()
+            q = q.filter(SourceFile.filename_low.like('%'+search_query+'%'))
+            results = q.all()
+
+            load_time = (datetime.now() - start).total_seconds()
+
+            num_results = len(results)
+            results = results[:max_results]
+
+            # humanize filesizes
+            dom = DataObjectManipulation()
+            for f in results:
+                f = dom.humanize(f, humansizes=True, humanpath=True)
+
+            # set icons
+            results = set_icon(cfg, results)
+
+            # sort alphabetically
+            results = sorted(results, key=lambda k: sort_alpha_keygetter(k).filename)
+
+            # folders always on top would be nice too
+            results = sorted(results, key=lambda k: sort_alpha_keygetter(k).is_directory, reverse=True)
+
+            return jinja2_template('search_results.html',
+                files=results,
+                num_results=num_results,
+                load_time=load_time,
+                navigation=generate_navigation(admin)
+            )
 
     return jinja2_template('search.html',
         title='Search',
-        navigation=generate_navigation(admin)
+        navigation=generate_navigation(admin),
+        flashmessages=errors
     )
-
-@route('/search/<path:path>')
-def search(db, path):
-    """Only authenticated users can see this"""
-    aaa.require(fail_redirect='/login')
-
-    name = path
-    res = db.query(SourceFile).filter(SourceFile.filename.like('%nfo.txt%')).all()
-
-    admin = request.environ.get('beaker.session')['username'] == 'admin'
-
 
 @route('/static/<filename:path>')
 def server_static(filename):
@@ -509,10 +573,12 @@ def source_add(db):
     )
 
 import bottle
-@bottle.post('/create_user')
+@route('/create_user')
 def create_user():
+    aaa.require(role='admin', fail_redirect='/login')
     try:
-        aaa.create_user(postd().username, postd().role, postd().password)
+        aaa.create_user('user', 'user', 'hiephoi', 'admin@admin.com', description='The admin yo')
+        #aaa.create_user(postd().username, postd().role, postd().password)
         return dict(ok=True, msg='')
     except Exception, e:
         return dict(ok=False, msg=e.message)

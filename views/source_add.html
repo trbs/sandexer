@@ -3,10 +3,6 @@
 {% block content %}
 
 <style>
-    .alert{
-        padding: 8px;
-        margin-bottom: 6px;
-    }
     .form-control {
         height: 34px;
         padding: 6px 12px;
@@ -203,7 +199,7 @@
 
     function process(res){
         if (res.hasOwnProperty('detecturl')){
-            console.log('yep');
+
             r = res['detecturl'];
             $('#detecturl_message').html('<small style=\"color:'+r['textcolor']+'\">'+r['status']+'</small>');
 

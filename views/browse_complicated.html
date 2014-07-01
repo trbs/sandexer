@@ -317,7 +317,7 @@
             function(){
                 if (!display_show_details){
                     var uri = $(this).attr('id') + '/';
-                    window.location.href = '/browse/'+uri;
+                    goto_uri('/browse/'+uri);
                 }
             }
     );

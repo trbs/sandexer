@@ -36,7 +36,6 @@ class DataObjectManipulation():
                     setattr(dataobject, attr, None)
         return dataobject
 
-
     def humanize(self, dataobject, humansizes=False, humandates=False, dateformat=None, humanpath=False, humanfile=False):
         for attr in [a for a in dir(dataobject) if not a.startswith('__') and not a.startswith('_')]:
             if humandates:
@@ -70,7 +69,23 @@ class DataObjectManipulation():
 
         return dataobject
 
-def UrlVarParse(query):
+def var_parse(query):
+    '''
+        Parses 'GET' parameters from the requested URL; returns a dictionairy.
+
+        Example:
+            http://domain.org/browse?sort=[size=desc,country=nl,en]&filter=bla
+
+        Would result in:
+            {
+                'sort': {
+                    'size': 'desc',
+                    'country': ['nl','en']
+                },
+                'filter': 'bla'
+            }
+    '''
+    #to-do: convert possible numbers to integers
     parsed = {}
 
     for key,val in query.iteritems():
@@ -98,6 +113,8 @@ def UrlVarParse(query):
 
                     newval.append(v)
                 parsed[key] = newval
+        else:
+            parsed[key] = val
 
     return parsed
 

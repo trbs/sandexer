@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    /*.table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {*/
+        /*padding: 2px;*/
+        /*line-height: 1.42857143;*/
+        /*border-top: 1px solid #ddd;*/
+        /*vertical-align: middle;*/
+    /*}*/
+</style>
+<style>
+    .table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+        background-color: #d7d7d7;
+        cursor: pointer;
+    }
+    ol{
+        font-size:16px;
+    }
+    .breadcrumb > li + li:before {
+        content: ">";
+        color: #999999;
+
+    }
+    .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+        line-height: 25px;
+        min-height: 25px;
+        height: 32px;
+        padding-left: 12px;
+    }
+    .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+        padding: 0px;
+        padding-left:10px;
+
+    }
+    a:hover{
+        text-decoration: none;
+    }
+    img.fileicon{
+        width:20px;
+        height:20px;
+    }
+    div.filethumbnail{
+        margin-top:2px;
+        margin-bottom:2px;
+    }
+    .blue {
+        color: #428bca;
+    }
+    th{
+        cursor:pointer;
+        color:black;
+    }
+    th .hover{
+        color:white;
+    }
+</style>
+
+<div style="height: 20px;"></div>
+<div class="container">
+    <div class="row">
+        <div class="alert alert-info">
+            Got <b>{{num_results}}</b> results in <b>{{load_time}}</b> seconds. Showing <b>{{files|length}}</b>
+        </div>
+
+        <table id="navigationTable" class="table table-hover">
+            <thead>
+            <tr>
+                <th></th>
+                <th>Filename</th>
+                <th style="min-width: 80px;">Size</th>
+                <th style="min-width: 160px;">Source</th>
+            </tr>
+            </thead>
+            <tbody data-link="row" class="rowlink">
+            {% for f in files %}
+                <tr rel="popover" title="">
+                    <td class="rowlink-skip" style="background-color:white;">
+                        <div id="{{f.filename}}" class="filethumbnail">
+                            <img class="fileicon" src="{{f.url_icon}}"/>
+                            <div style="height: 2px;"></div>
+                        </div>
+                    </td>
+                    <td><a class="hoi" title='' href="{{f.filename}}{% if f.is_directory %}/{% endif %}" target="_self"><b>{{f.filename}}</b></a></td>
+                    <td><b>{{f.filesize}}</b></td>
+                    <td>
+                        <img class="fileicon" src="/static/user_upload/icon_{{f.source_name}}.png"/>
+                        {{f.source_name}}
+                    </td>
+                </tr>
+            {% endfor %}
+
+</div>
+<script>
+    $(document).ready(function(){
+        $(function(){
+            $("#navigationTable").tablesorter();
+        });
+    });
+</script>
+{% endblock %}

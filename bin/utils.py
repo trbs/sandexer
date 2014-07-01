@@ -5,7 +5,7 @@ import random
 from datetime import datetime
 import logging
 import inspect
-
+from bin.files import Icons
 
 def bytesTo(bytes, to, bsize=1024):
     r = float(bytes)
@@ -44,3 +44,35 @@ class Debug():
             self._log.info('%s:%s' % (date,msg.replace('{{TYPE}}', 'INFO')))
         else:
             self._log.error('%s:%s' % (date,msg.replace('{{TYPE}}', 'ERROR')))
+
+
+def set_icon(cfg, files):
+    icons = Icons(cfg)
+
+    theme = 'blue'
+    theme_path = '/static/icons/%s/128/' % theme
+
+    for f in files:
+        if f.is_directory:
+            if f.filename == '..':
+                f.url_icon = theme_path + icons.additional_icons[20]
+            else:
+                f.url_icon = theme_path + icons.additional_icons[21]
+            continue
+
+        if f.fileext in icons.additional_icons_exts:
+            icon = icons.additional_icons_exts[f.fileext]
+            icon = icons.additional_icons[icon]
+
+            f.url_icon = theme_path + icon
+        else:
+            f.url_icon = theme_path + icons.file_icons[f.fileformat]
+
+    return files
+
+def sort_alpha_keygetter(k):
+    if k.filename == None:
+        k.filename = '..'
+    else:
+        k.filename.lower()
+    return k

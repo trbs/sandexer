@@ -30,6 +30,17 @@
     /_______  //_______  (____  /__|    \___  >___|  /
             \/         \/     \/            \/     \/
                 </pre>
+
+                {% if flashmessages %}
+
+                {% for message in flashmessages %}
+                <div class="alert alert-{{message.mtype}}">
+                    <b>{{message.key}}: </b>{{message.message}}<br>
+                </div>
+                {% endfor %}
+
+                {% endif %}
+
                 <div class="well">
                     <div class="input-group">
                         <input class="form-control" type="text" placeholder="">

@@ -1,4 +1,5 @@
 import sqlalchemy as sql
+from sqlalchemy import or_
 import bottle_sqlalchemy as sqlalchemy
 from sqlalchemy import create_engine, Column, Sequence
 from sqlalchemy.ext.declarative import declarative_base
@@ -83,8 +84,25 @@ class Postgres():
             df.filename = urllib.quote_plus(df.filename) if df.filename else None
             df.filepath = urllib.quote_plus(df.filepath) if df.filepath else None
             df.fileext = urllib.quote_plus(df.fileext) if df.fileext else None
+            setattr(df, 'filename_low', df.filename.lower() if df.filename else None)
+            setattr(df, 'filepath_low', df.filepath.lower() if df.filepath else None)
 
-            line = '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' % (str(id), source_name, isdir, df.filename, df.filesize, df.filepath, df.filemodified, df.fileperm, df.fileadded, df.fileext, df.fileformat, str(0))
+            line = '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' % (
+                str(id),
+                source_name,
+                isdir,
+                df.filename,
+                df.filename_low,
+                df.filepath_low,
+                df.filesize,
+                df.filepath,
+                df.filemodified,
+                df.fileperm,
+                df.fileadded,
+                df.fileext,
+                df.fileformat, str(0)
+            )
+
             f.write(line)
 
             inserts += 1
@@ -159,6 +177,8 @@ class SourceFile(Base):
     source_name = Column(sql.String())
     is_directory = Column(sql.Boolean())
     filename = Column(sql.String())
+    filename_low = Column(sql.String())
+    filepath_low = Column(sql.String())
     filesize = Column(sql.BigInteger())
     filepath = Column(sql.String())
     filemodified = Column(sql.DateTime())
@@ -172,6 +192,8 @@ class SourceFile(Base):
         self.source_name = source_name
         self.filepath = path
         self.filename = name
+        self.filepath_low = self.filepath.lower() if self.filepath else None
+        self.filename_low = self.filename.lower() if self.filename else None
         self.filesize = int(size) if isInt(size) else size
         self.isdir = isdir
         self.filemodified = modified

@@ -22,7 +22,7 @@
     .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
         padding: 0px;
         padding-left:10px;
-
+        border-color: #e3e3e3;
     }
     a:hover{
         text-decoration: none;
@@ -57,18 +57,23 @@
                 {% endfor %}
             </ol>
 
-            {% if path != '/' %}
-                {% if load_time %}
-                    <div class="alert alert-info">Page load: {{load_time}} sec</div>
-                {% endif %}
-            {% endif %}
-
             {% if source.html_header %}
                 {% if path == '/' %}
                     <pre>{{source.html_header}}</pre>
                 {% endif %}
             {% endif %}
 
+            <div style="margin-bottom:10px;padding-right:0px;padding-left:0px;">
+                <div class="input-group">
+                    <input class="form-control" type="text" id="quick_search" placeholder="Quick Search...">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button">
+                                <span class="glyphicon glyphicon-search"></span>
+                            </button>
+                        </span>
+                </div>
+            </div>
+            <div class="well">
             <table id="navigationTable" class="table table-hover">
                 <thead>
                 <tr>
@@ -78,24 +83,31 @@
                     <th>Permission</th>
                     <th>Modified</th>
                 </tr>
-            </thead>
-            <tbody data-link="row" class="rowlink">
-                {% for f in files %}
-                    <tr rel="popover" title="">
-                        <td class="rowlink-skip" style="background-color:white;">
-                            <div id="{{f.filename}}" class="filethumbnail">
-                                <img class="fileicon" src="{{f.url_icon}}"/>
-                                <div style="height: 2px;"></div>
-                            </div>
-                        </td>
-                        <td><a class="hoi" title='' href="{{f.filename}}{% if f.is_directory %}/{% endif %}" target="_self"><b>{{f.filename}}</b></a></td>
-                        <td><b>{{f.filesize}}</b></td>
-                        <td>{{f.fileperm}}</td>
-                        <td>{{f.filemodified}}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
+                </thead>
+                <tbody data-link="row" class="rowlink">
+                    {% for f in files %}
+                        <tr rel="popover" title="">
+                            <td class="rowlink-skip" style="background-color:white;">
+                                <div id="{{f.filename}}" class="filethumbnail">
+                                    <img class="fileicon" src="{{f.url_icon}}"/>
+                                    <div style="height: 2px;"></div>
+                                </div>
+                            </td>
+                            <td><a class="hoi" title='' href="{{f.filename}}{% if f.is_directory %}/{% endif %}" target="_self"><b>{{f.filename}}</b></a></td>
+                            <td><b>{{f.filesize}}</b></td>
+                            <td>{{f.fileperm}}</td>
+                            <td>{{f.filemodified}}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
         </table>
+            </div>
+        {% if path != '/' %}
+            {% if load_time %}
+                <div class="alert alert-info">Page load: {{load_time}} sec</div>
+        {% endif %}
+        <br>
+        {% endif %}
         {% else %}
             Does not exist or no files have been added yet.
         {% endif %}
@@ -106,8 +118,22 @@
     $(document).ready(function(){
         $(function(){
             $("#navigationTable").tablesorter();
+
+            $('.tablesorter-header').css('border', '0px solid white');
+            $('.tablesorter-headerUnSorted').css('border', '0px solid white');
+
             var image = '<img width=256 src=\"http://i.imgur.com/SoYA2Og.jpg\"/>';
             $('.tr').popover({placement: 'bottom', content: image, html: true, trigger: "hover"});
+
+            $("#quick_search").keyup(function (e) {
+                if (e.keyCode == 13) {
+                    var val = $('#quick_search').val();
+                    if(val != ''){
+                        var uri = '/search?query='+val+'&server=[{{source.name}}]&path={{path_quoted}}';
+                        goto_uri(uri);
+                    }
+                }
+            });
         });
     });
 </script>
