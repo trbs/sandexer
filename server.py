@@ -11,13 +11,11 @@ from PIL import Image
 from urllib import quote_plus, unquote_plus
 import os
 
-from bin.bytes2human import bytes2human, human2bytes
-from bin.files import Icons
+from bin.bytes2human import bytes2human
 from bin.config import Config
 from bin.orm import Postgres, Source, SourceFile, or_
 from bin.dataobjects import DataObjectManipulation, var_parse, FlashMessage
-
-from bin.utils import Debug, set_icon, sort_alpha_keygetter
+from bin.utils import Debug, set_icon, sort_alpha_keygetter, gen_action_fetches, gen_navigation, gen_breadcrumps, verify_upload
 from bin.api import Api
 import bin.forms as Forms
 
@@ -27,7 +25,7 @@ monkey.patch_all()
 from psycogreen.gevent import patch_psycopg
 patch_psycopg()
 
-#
+# hook like a true pirate
 @hook('after_request')
 def enable_cors():
     response.headers['X-Pirate'] = 'Yarrr'
@@ -64,29 +62,6 @@ Jinja2Template.settings = {
     'autoescape': True,
 }
 
-def generate_navigation(admin):
-    return [{'href': '/', 'caption': 'Home'},
-            {'href': '/browse/', 'caption': 'Browse'},
-            {'href': '/search', 'caption': 'Search'},
-            {'href': '/logout', 'caption': 'Logout'},
-            {'href': '/admin', 'caption': 'Admin'} if admin else None]
-
-def generate_breadcrumps(path, dir='', lastslash=True, capitalize=False):
-    crumbs = []
-    spl = [z for z in path.split('/') if z]
-
-    for i in range(0,len(spl)):
-        link = '/'.join(spl[:i+1])
-        if not link.endswith('/'): link += '/'
-        name = link[:-1].split('/')[-1]
-
-        crumbs.append({
-            'href': dir + link[:-1] if not lastslash else dir + link,
-            'name': name.capitalize() if capitalize else name,
-            'active': 'active' if i == len(spl) -1 else ''})
-
-    return crumbs
-
 @route('/')
 def root():
     """Only authenticated users can see this"""
@@ -97,7 +72,7 @@ def root():
 
     return jinja2_template('index.html',
         title='Home',
-        navigation=generate_navigation(admin),
+        navigation=gen_navigation(admin),
         welcome_message=message
     )
 
@@ -108,12 +83,12 @@ def browse():
 
     return redirect('/browse?sort=[size=desc]')
 
-@route('/test')
-def test(db):
-    jinja2_template('bla.html', navigation=generate_navigation(True))
-
 @route('/browse')
 def browse(db):
+    #"""Only authenticated users can see this"""
+    aaa.require(fail_redirect='/login')
+    admin = request.environ.get('beaker.session')['username'] == 'admin'
+
     sort = None
     sort_options = {
         'size': 'total_size',
@@ -146,20 +121,7 @@ def browse(db):
     if 'filter' in query:
         filter = query['filter']
 
-    #"""Only authenticated users can see this"""
-    aaa.require(fail_redirect='/login')
-
-    # auth kan met filter db.query(Source).filter_by(name=...)
     sources = db.query(Source).all()
-
-#
-#    if sort:
-#        sources = sorted(sources, key=lambda k: k.__dict__[sort['key']])
-#
-#        if sort['val'] == 'desc':
-#            sources = sources[::-1]
-#    else:
-#        sources = sorted(sources, key=lambda k: random.random())
 
     for source in sources:
         source = DataObjectManipulation().humanize(
@@ -173,19 +135,20 @@ def browse(db):
     return jinja2_template('browse_complicated.html',
         title='Browse',
         sources=sources,
-        navigation=generate_navigation(True))
+        navigation=gen_navigation(admin))
 
 @route('/browse/<path:path>')
 def browse_dir(path, db):
-    #to-do: fix this crap
-    start_time = datetime.now()
-    files = []
-    spl = path.split('/')
-    source_name = spl[0]
-    source = None
-    filepath =  '/' + '/'.join(spl[1:-1])
+    #"""Only authenticated users can see this"""
+    aaa.require(fail_redirect='/login')
+    admin = request.environ.get('beaker.session')['username'] == 'admin'
+
     filename = ''
     isdir = False
+
+    spl = path.split('/')
+    source_name = spl[0]
+    filepath =  '/' + '/'.join(spl[1:-1])
 
     if path.endswith('/'):
         isdir = True
@@ -195,7 +158,9 @@ def browse_dir(path, db):
     if filepath != '/':
         filepath += '/'
 
+    start_dbtime = datetime.now()
     source = db.query(Source).filter_by(name=source_name).first()
+    files = []
 
     if source:
         if not isdir:
@@ -215,23 +180,32 @@ def browse_dir(path, db):
         files = set_icon(cfg, files)
         source = source
 
+    # sort alphabetically
     files = sorted(files, key=lambda k: sort_alpha_keygetter(k).filename)
 
-    dom = DataObjectManipulation()
-    for sourcefile in files:
-        sourcefile = dom.humanize(sourcefile, humansizes=True, humandates=True, humanfile=True, humanpath=True)
+    # folders always on top would be nice too
+    files = sorted(files, key=lambda k: sort_alpha_keygetter(k).is_directory, reverse=True)
 
-    load_time = (datetime.now() - start_time).total_seconds()
+    files_size = 0
+    dom = DataObjectManipulation()
+    for file in files:
+        files_size += file.filesize
+        file = dom.humanize(file, humansizes=True, humandates=True, humanfile=True, humanpath=True)
+
+    files_size = bytes2human(files_size)
+    load_time = (datetime.now() - start_dbtime).total_seconds()
 
     return jinja2_template('browse_directory.html',
         load_time=load_time,
         title='Browse',
         path=filepath,
+        fetch=gen_action_fetches(source, filepath),
         path_quoted=quote_plus(filepath),
+        files_size=files_size,
         files=files,
         source=source,
-        navigation=generate_navigation(admin),
-        breadcrumbs=generate_breadcrumps(source_name+filepath, 'browse/')
+        navigation=gen_navigation(admin),
+        breadcrumbs=gen_breadcrumps(source_name+filepath, 'browse/')
     )
 
 @route('/search')
@@ -332,14 +306,15 @@ def search(db):
 
             return jinja2_template('search_results.html',
                 files=results,
+                query=vars,
                 num_results=num_results,
                 load_time=load_time,
-                navigation=generate_navigation(admin)
+                navigation=gen_navigation(admin)
             )
 
     return jinja2_template('search.html',
         title='Search',
-        navigation=generate_navigation(admin),
+        navigation=gen_navigation(admin),
         flashmessages=errors
     )
 
@@ -400,7 +375,7 @@ def admin():
 
     return jinja2_template('admin.html',
         title='Admin',
-        navigation=generate_navigation(admin=True)
+        navigation=gen_navigation(admin=True)
     )
 
 
@@ -419,7 +394,7 @@ def sources(db):
 
     return jinja2_template('sources.html',
         title='Admin',
-        navigation=generate_navigation(True),
+        navigation=gen_navigation(True),
         sources=sources)
 
 @route('/admin/sources/')
@@ -447,9 +422,8 @@ def delete_source(path, db):
         return jinja2_template('source_delete.html',
             source=source,
             name=name,
-            navigation=generate_navigation(True),
+            navigation=gen_navigation(True),
     )
-
 
 @route('/admin/sources/edit/<path:path>')
 def edit_source(path, db):
@@ -474,8 +448,8 @@ def edit_source(path, db):
                 title='Admin',
                 source_name = name,
                 path=path,
-                navigation=generate_navigation(admin=True),
-                breadcrumbs=generate_breadcrumps('/sources/edit/' + name + '/crawl', 'admin/', lastslash=False, capitalize=True)
+                navigation=gen_navigation(admin=True),
+                breadcrumbs=gen_breadcrumps('/sources/edit/' + name + '/crawl', 'admin/', lastslash=False, capitalize=True)
             )
         else:
             return redirect('/admin/sources')
@@ -483,41 +457,16 @@ def edit_source(path, db):
     return jinja2_template('source_edit.html',
         title='Admin',
         path=path,
-        navigation=generate_navigation(admin=True),
-        breadcrumbs=generate_breadcrumps('/sources/edit/', 'admin/', lastslash=False, capitalize=True),
+        navigation=gen_navigation(admin=True),
+        breadcrumbs=gen_breadcrumps('/sources/edit/', 'admin/', lastslash=False, capitalize=True),
         source=source
     )
-
-def verify_upload(upload, dimension=512):
-    errors = []
-    name, ext = os.path.splitext(upload.filename)
-
-    valid_extensions = ['.jpg', '.png', '.jpeg', '.gif']
-
-    if ext in valid_extensions:
-        img = None
-        try:
-            img=Image.open(upload.file)
-        except Exception as e:
-            errors.append(Debug(str(e)))
-
-        if img and not img.format in [z[1:].upper() for z in valid_extensions]:
-            errors.append(Debug('The upload was not a valid image. Valid extensions are: %s' % ' '.join(valid_extensions)))
-        elif img:
-            if img.size[0] > dimension or img.size[1] > dimension:
-                errors.append(Debug('Image exceeded dimensions 512x512.'))
-            else:
-                return {'img': img}
-    else:
-        errors.append('Extension \'%s\' not allowed. Valid extensions are: %s' % (ext, ' '.join(valid_extensions)))
-
-    return errors
 
 @route('/admin/sources/add', method=['POST', 'GET'])
 def source_add(db):
     #"""Only admin users can see this"""
     aaa.require(role='admin', fail_redirect='/login')
-    errors = [] # dirty hack, watch me care
+    errors = []
 
     form = Forms.sources_add(request.forms)
 
@@ -548,11 +497,14 @@ def source_add(db):
                         os.popen('mkdir static/user_upload')
                     if os.path.isfile(path):
                         os.remove(path)
+
                     try:
-                        verified['img'].save(path)
-                        i.thumbnail_url = '/' + path
+                        save_path = 'static/user_upload/icon_%s.png' % form.data['name']
+                        verified['img'].save(save_path)
+                        i.thumbnail_url = '/' + save_path
                     except:
                         errors.append(FlashMessage('icon', 'unknown error, pick another image', mtype='danger'))
+
                 elif isinstance(verified, Debug):
                     errors.append(FlashMessage('icon', verified.message, mtype='danger'))
                 else:
@@ -566,10 +518,10 @@ def source_add(db):
     return jinja2_template('source_add.html',
         form_obj=form._fields,
         title='t',
-        navigation=generate_navigation(admin=True),
+        navigation=gen_navigation(admin=True),
         form=Forms.sources_add(),
         flashmessages=errors,
-        breadcrumbs=generate_breadcrumps('/sources/add', 'admin/', lastslash=False, capitalize=True)
+        breadcrumbs=gen_breadcrumps('/sources/add', 'admin/', lastslash=False, capitalize=True)
     )
 
 import bottle
@@ -627,28 +579,7 @@ def error404(error):
         title='Error'
     )
 
-#import bin.test3
-
-#db.add_source('DebianCD', '')
-
-#
-#from bin.urlparse import ParseUrl
-#url = ParseUrl('zz')
-#
-#from datetime import datetime
-#from bin.crawler import WebCrawl
-#start = datetime.now()
-#c = WebCrawl(cfg=cfg, db=db, name='Fluffy', url=url, ua='sandexer webcrawl - dsc - https://github.com/skftn/sandexer/', auth_username='', auth_password='', auth_type='BASIC', crawl_wait=float(0.1))
-#aa = c.http()
-#from bin.utils import Debug
-#if isinstance(aa, Debug):
-#    print aa.message
-#else:
-#    print 'Added: ' + str(aa)
-#end = datetime.now()
-#print 'TOTAL: ' + str((end - start).total_seconds()) + ' seconds'
-#
-#c = FtpCrawl(cfg, db, 'hoi', '192.168.178.30', 'ftpuser', 'sda')
+#c = FtpCrawl(cfg, db, 'hoi', '', '', '')
 #c.ftp()
 
 def main():

@@ -4,7 +4,7 @@ import bottle_sqlalchemy as sqlalchemy
 from sqlalchemy import create_engine, Column, Sequence
 from sqlalchemy.ext.declarative import declarative_base
 import psycopg2, random, urllib, os
-from bin.utils import isInt, generate_string, Debug
+from bin.utils import isInt, gen_string, Debug
 from dataobjects import DataObjectManipulation
 
 from datetime import datetime
@@ -49,7 +49,7 @@ class Postgres():
         # as source_name is alphanummeric
 
         start = datetime.now()
-        temp = '/tmp/%s.crawl' % generate_string(random.randrange(5,12))
+        temp = '/tmp/%s.crawl' % gen_string(random.randrange(5,12))
 
         conn = psycopg2.connect('host=%s port=%s dbname=%s user=%s password=%s' % (
             self._cfg.get('Postgres', 'host'),

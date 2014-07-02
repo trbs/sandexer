@@ -9,6 +9,7 @@ psycopg2
 psycogreen
 python-dateutil
 jinja2
+sqlalchemy
 beaker
 WTForms
 pillow

@@ -4,9 +4,23 @@ A lightweight file indexer for indexing files from multiple hosts, over multiple
 
 Lightweight in the sense that it runs fine on suboptimal hardware, sandexer is designed to run on machines ranging from raspberry-pi's to your latest Xeon box.
 
+Features:
+- Crawling HTTP open directories (webdav)(BASIC/DIGEST)
+- Crawling FTP/SMB servers
+- Automatic crawling at intervals
+- The creation of users and group. Determine which group sees which server.
+- PostgreSQL/SQLite/MySQL/Oracle/Sybase/MsSQL/Firebird/Drizzle
+- State of the art web 2.0 html5 bootstrap7 WebGL graphical statistics
+- An admin panel
+
+Requirements:
+- python 2.* on linux
+
 This application is still early in development and thus not functional yet.
 
 ![bla](http://imgur.com/cdRb50V.png)
+
+![bla2](http://imgur.com/7pdGXe9.png)
 
 Status: pre-alpha
 
@@ -20,9 +34,6 @@ Installation
     ~$ git clone https://github.com/skftn/sandexer.git
     ~$ mv sanderex src
     ~$ pip install -r src/requirements.txt
-    --
-    This will fail for bottle-flash. Fix: pip install --no-install bottle-flash; touch build/bottle-flash/README.rst;pip install --no-download bottle-flash
-    --
     ~$ cp conf/config.example conf/config
     ~$ vim config.py
     --Edit the config, follow instructions--
