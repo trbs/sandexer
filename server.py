@@ -67,7 +67,7 @@ def root():
     """Only authenticated users can see this"""
     aaa.require(fail_redirect='/login')
 
-    message = 'Hi welcome to my site please don\'t fucking wreck shit kthx.'
+    message = 'Not done yet.'
     admin = request.environ.get('beaker.session')['username'] == 'admin'
 
     return jinja2_template('index.html',
@@ -304,9 +304,17 @@ def search(db):
             # folders always on top would be nice too
             results = sorted(results, key=lambda k: sort_alpha_keygetter(k).is_directory, reverse=True)
 
+            db.rollback()
+
+            sources_list = db.query(Source).all()
+            sources_dict = {}
+            for source in sources_list:
+                sources_dict[source.name] = source
+
             return jinja2_template('search_results.html',
                 files=results,
                 query=vars,
+                sources=sources_dict,
                 num_results=num_results,
                 load_time=load_time,
                 navigation=gen_navigation(admin)
@@ -502,7 +510,7 @@ def source_add(db):
                         save_path = 'static/user_upload/icon_%s.png' % form.data['name']
                         verified['img'].save(save_path)
                         i.thumbnail_url = '/' + save_path
-                    except:
+                    except Exception as e:
                         errors.append(FlashMessage('icon', 'unknown error, pick another image', mtype='danger'))
 
                 elif isinstance(verified, Debug):

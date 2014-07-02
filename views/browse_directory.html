@@ -218,10 +218,10 @@
                                             <div style="height: 2px;"></div>
                                         </div>
                                     </td>
-                                    <td><a class="hoi" title='' href="{{f.filename}}{% if f.is_directory %}/{% endif %}" target="_self"><b>{{f.filename}}</b></a></td>
-                                    <td><b>{{f.filesize}}</b></td>
+                                    <td><a class="hoi" title='' href="{{f.filename_human}}{% if f.is_directory %}/{% endif %}" target="_self"><b>{{f.filename_human}}</b></a></td>
+                                    <td><b>{{f.filesize_human}}</b></td>
                                     <td>{{f.fileperm}}</td>
-                                    <td>{{f.filemodified}}</td>
+                                    <td>{{f.filemodified_human}}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>

@@ -26,7 +26,7 @@ Status: pre-alpha
 
 Installation
 ===================================================
-    ~$ sudo apt-get install virtualenv git postgresql postgresql-client postgresql-server-dev-X.Y
+    ~$ sudo apt-get install virtualenv git libjpeg-dev postgresql postgresql-client postgresql-server-dev-X.Y
     ~$ cd ~/
     ~$ virtualenv sandexer
     ~$ cd $_

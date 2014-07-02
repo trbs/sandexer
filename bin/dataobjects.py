@@ -48,7 +48,7 @@ class DataObjectManipulation():
                 format = '%d %b %Y %H:%M' if not dateformat else dateformat
 
                 if isinstance(get_attr, datetime):
-                    setattr(dataobject, attr, get_attr.strftime(format))
+                    setattr(dataobject, attr + '_human', get_attr.strftime(format))
 
             if humansizes:
                 get_attr = getattr(dataobject, attr)
@@ -62,7 +62,7 @@ class DataObjectManipulation():
                 if isnum:
                     tokens = ['filesize', 'bytes', 'total_size']
                     if attr in tokens:
-                        setattr(dataobject, attr, bytes2human(get_attr))
+                        setattr(dataobject, attr + '_human', bytes2human(get_attr))
 
             if humanpath or humanfile:
                 get_attr = getattr(dataobject, attr)
@@ -70,7 +70,7 @@ class DataObjectManipulation():
                 if isinstance(get_attr, str) or isinstance(get_attr, unicode):
                     tokens = ['filepath', 'filename']
                     if attr in tokens:
-                        setattr(dataobject, attr, unquote_plus(get_attr))
+                        setattr(dataobject, attr + '_human', unquote_plus(get_attr))
 
         return dataobject
 

@@ -108,7 +108,7 @@ def gen_breadcrumps(path, dir='', lastslash=True, capitalize=False):
     return crumbs
 
 def verify_upload(upload, dimension=512):
-    errors = []
+    errors = None
     name, ext = os.path.splitext(upload.filename)
 
     valid_extensions = ['.jpg', '.png', '.jpeg', '.gif']
@@ -118,17 +118,17 @@ def verify_upload(upload, dimension=512):
         try:
             img=Image.open(upload.file)
         except Exception as e:
-            errors.append(Debug(str(e)))
+            errors = Debug(str(e))
 
         if img and not img.format in [z[1:].upper() for z in valid_extensions]:
-            errors.append(Debug('The upload was not a valid image. Valid extensions are: %s' % ' '.join(valid_extensions)))
+            errors = Debug('The upload was not a valid image. Valid extensions are: %s' % ' '.join(valid_extensions))
         elif img:
             if img.size[0] > dimension or img.size[1] > dimension:
-                errors.append(Debug('Image exceeded dimensions 512x512.'))
+                errors = Debug('Image exceeded dimensions 512x512.')
             else:
                 return {'img': img}
     else:
-        errors.append('Extension \'%s\' not allowed. Valid extensions are: %s' % (ext, ' '.join(valid_extensions)))
+        errors = 'Extension \'%s\' not allowed. Valid extensions are: %s' % (ext, ' '.join(valid_extensions))
 
     return errors
 

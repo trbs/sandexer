@@ -32,8 +32,6 @@
     .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
         padding: 0px;
         padding-left:10px;
-        white-space: nowrap;
-
     }
     a:hover{
         text-decoration: none;
@@ -48,6 +46,13 @@
     }
     .blue {
         color: #428bca;
+    }
+    .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td {
+        line-height: 25px;
+        min-height: 25px;
+        height: 32px;
+        padding-left: 12px;
+        max-width: 600px;
     }
 
 </style>
@@ -74,6 +79,12 @@
                 </thead>
                 <tbody data-link="row" class="rowlink">
                 {% for f in files %}
+                    {% set url = sources[f.source_name].crawl_url %}
+                    {% set path = f.filepath %}
+                    {% set path_clean = f.filepath_human[1:] %}
+                    {% set filesize = f.filesize %}
+                    {% set filesize_clean = f.filesize_human %}
+
                     <tr rel="popover" title="">
                         <td class="rowlink-skip">
                             <div id="{{f.filename}}" class="filethumbnail">
@@ -81,8 +92,12 @@
                                 <div style="height: 2px;"></div>
                             </div>
                         </td>
-                        <td><a class="hoi" title='' href="{{f.filename}}{% if f.is_directory %}/{% endif %}" target="_self"><b>{{f.filename}}</b></a></td>
-                        <td><b>{{f.filesize}}</b></td>
+                        <td>
+                            <a class="hoi" title='' href="{{url}}{{path_clean}}/{{f.filename}}{% if f.is_directory %}/{% endif %}" target="_self">
+                                <b>{{f.filename}}</b>
+                            </a>
+                        </td>
+                        <td><b>{{filesize_clean}}</b></td>
                         <td>
                             <img class="fileicon" src="/static/user_upload/icon_{{f.source_name}}.png"/>
                             {{f.source_name}}

@@ -35,8 +35,8 @@ class Api():
                 except:
                     return dumps({'detecturl': 'Could not parse location.'})
                 try:
-                    res = requests.head(url=url.reluri,verify=False, allow_redirects=False, headers={'User-Agent': self._cfg.get('Crawler', 'default_ua')})
-                except:
+                    res = requests.head(url=url.reluri,verify=False, timeout=2, allow_redirects=False, headers={'User-Agent': self._cfg.get('Crawler', 'default_ua')})
+                except Exception as e:
                     return dumps({
                         'detecturl':{
                             'status': 'Status: Error',
