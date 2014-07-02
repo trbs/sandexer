@@ -60,7 +60,9 @@
         </div>
 
         <div class="well">
+            {% if query['query'] %}
             <h4>Search results for '{{query['query']}}'</h4>
+            {% endif %}
             <table id="navigationTable" class="table table-hover">
                 <thead>
                 <tr>

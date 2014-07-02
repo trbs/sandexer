@@ -4,8 +4,8 @@ import bottle_sqlalchemy as sqlalchemy
 from sqlalchemy import create_engine, Column, Sequence
 from sqlalchemy.ext.declarative import declarative_base
 import psycopg2, random, urllib, os
-from bin.utils import isInt, gen_string, Debug
-from dataobjects import DataObjectManipulation
+from bin.utils import isInt, gen_string
+from dataobjects import Debug
 
 from datetime import datetime
 

@@ -15,8 +15,9 @@ from bs4 import BeautifulSoup
 import zlib
 from bin.urlparse import ParseUrl
 from bin.orm import SourceFile
-from bin.utils import Debug, isInt
+from bin.utils import isInt
 from bin.protocols import Web
+from bin.dataobjects import Debug
 
 #to-do:
 # support SMB/FTP/AFP

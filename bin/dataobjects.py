@@ -1,9 +1,14 @@
+"""
+    This file is like utils.py, but instead of functions,
+    it contains classes I did not know where to put, used
+    troughout the program.
+"""
 from datetime import datetime
-
 from bin.utils import isInt
-from bin.utils import Debug
 from urllib import quote_plus, unquote_plus
 from bytes2human import human2bytes, bytes2human
+import logging
+import inspect
 
 
 class DiscoveredFile():
@@ -69,54 +74,28 @@ class DataObjectManipulation():
 
         return dataobject
 
-def var_parse(query):
-    '''
-        Parses 'GET' parameters from the requested URL; returns a dictionairy.
+class Debug():
+    def __init__(self, message, data=None, warning=False, info=False, broadcast=True):
+        try:
+            self.caller = inspect.stack()[1][0].f_locals.get('self', None).__class__.__name__
+        except:
+            self.caller = '?'
 
-        Example:
-            http://domain.org/browse?sort=[size=desc,country=nl,en]&filter=bla
+        self._log = logging.getLogger('file_logger')
+        self.now = datetime.now()
+        self.message = message
+        self.data = data
 
-        Would result in:
-            {
-                'sort': {
-                    'size': 'desc',
-                    'country': ['nl','en']
-                },
-                'filter': 'bla'
-            }
-    '''
-    #to-do: convert possible numbers to integers
-    parsed = {}
+        msg = 'class:%s:{{TYPE}} - %s' % (self.caller,message)
+        date = self.now.strftime('%d %b %Y %H:%M:%S')
 
-    for key,val in query.iteritems():
-        if val.startswith('[') and val.endswith(']'):
-            val = val[1:-1]
-
-            if ',' in val:
-                val = [z for z in val.split(',') if z]
+        if broadcast:
+            if warning:
+                self._log.warning('%s:%s' % (date,msg.replace('{{TYPE}}', 'WARNING')))
+            elif info:
+                self._log.info('%s:%s' % (date,msg.replace('{{TYPE}}', 'INFO')))
             else:
-                val = [val] if val else None
-
-            if val:
-                newval = []
-
-                for v in val:
-                    if '=' in v:
-                        spl = v.split('=')
-
-                        if len(spl) == 2 and spl[0] and spl[1]:
-                            newval.append({spl[0]: spl[1]})
-
-                            continue
-                        else:
-                            continue
-
-                    newval.append(v)
-                parsed[key] = newval
-        else:
-            parsed[key] = val
-
-    return parsed
+                self._log.error('%s:%s' % (date,msg.replace('{{TYPE}}', 'ERROR')))
 
 class FlashMessage():
     def __init__(self, key, message, mtype='info'):

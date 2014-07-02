@@ -1,12 +1,14 @@
-import sys
+"""
+    This file is like dataobjects.py, but instead of classes,
+    it contains functions I did not know where to put, used
+    troughout the program.
+"""
 import os
 import string
 import random
-from datetime import datetime
-import logging
-import inspect
 from bin.files import Icons
 from PIL import Image
+
 
 def bytesTo(bytes, to, bsize=1024):
     r = float(bytes)
@@ -23,30 +25,6 @@ def isInt(num):
 
 def gen_string(size=16, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
-
-class Debug():
-    def __init__(self, message, data=None, warning=False, info=False, broadcast=True):
-        try:
-            self.caller = inspect.stack()[1][0].f_locals.get('self', None).__class__.__name__
-        except:
-            self.caller = '?'
-
-        self._log = logging.getLogger('file_logger')
-        self.now = datetime.now()
-        self.message = message
-        self.data = data
-
-        msg = 'class:%s:{{TYPE}} - %s' % (self.caller,message)
-        date = self.now.strftime('%d %b %Y %H:%M:%S')
-
-        if broadcast:
-            if warning:
-                self._log.warning('%s:%s' % (date,msg.replace('{{TYPE}}', 'WARNING')))
-            elif info:
-                self._log.info('%s:%s' % (date,msg.replace('{{TYPE}}', 'INFO')))
-            else:
-                self._log.error('%s:%s' % (date,msg.replace('{{TYPE}}', 'ERROR')))
-
 
 def set_icon(cfg, files):
     icons = Icons(cfg)
@@ -79,6 +57,7 @@ def sort_alpha_keygetter(k):
         k.filename.lower()
     return k
 
+from bin.dataobjects import Debug
 def gen_action_fetches(source, path):
     url = source.crawl_url
     if path == '/':
@@ -152,3 +131,52 @@ def verify_upload(upload, dimension=512):
         errors.append('Extension \'%s\' not allowed. Valid extensions are: %s' % (ext, ' '.join(valid_extensions)))
 
     return errors
+
+def var_parse(query):
+    '''
+        Parses 'GET' parameters from the requested URL; returns a dictionairy.
+
+        Example:
+            http://domain.org/browse?sort=[size=desc,country=nl,en]&filter=bla
+
+        Would result in:
+            {
+                'sort': {
+                    'size': 'desc',
+                    'country': ['nl','en']
+                },
+                'filter': 'bla'
+            }
+    '''
+    #to-do: convert possible numbers to integers
+    parsed = {}
+
+    for key,val in query.iteritems():
+        if val.startswith('[') and val.endswith(']'):
+            val = val[1:-1]
+
+            if ',' in val:
+                val = [z for z in val.split(',') if z]
+            else:
+                val = [val] if val else None
+
+            if val:
+                newval = []
+
+                for v in val:
+                    if '=' in v:
+                        spl = v.split('=')
+
+                        if len(spl) == 2 and spl[0] and spl[1]:
+                            newval.append({spl[0]: spl[1]})
+
+                            continue
+                        else:
+                            continue
+
+                    newval.append(v)
+                parsed[key] = newval
+        else:
+            parsed[key] = val
+
+    return parsed

@@ -6,8 +6,7 @@ from bin.protocols import Web
 from json import dumps
 from bin.orm import Source, SourceFile
 from bin.crawler import WebCrawl
-from bin.dataobjects import DataObjectManipulation
-from bin.utils import Debug
+from bin.dataobjects import DataObjectManipulation, Debug
 
 class Api():
     def __init__(self, cfg):
