@@ -8,10 +8,10 @@ Features:
 - Crawling HTTP open directories (webdav)(BASIC/DIGEST)
 - Crawling FTP/SMB servers
 - Automatic crawling at intervals
+- Dynamically caching of directories + precaching
 - The creation of users and group. Determine which group sees which server.
 - PostgreSQL/SQLite/MySQL/Oracle/Sybase/MsSQL/Firebird/Drizzle
-- State of the art web 2.0 html5 bootstrap7 WebGL graphical statistics
-- An admin panel
+- Bootstrap 3.0 interface with an admin panel.
 
 Requirements:
 - python 2.* on linux

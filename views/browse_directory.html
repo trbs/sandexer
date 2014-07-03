@@ -115,7 +115,9 @@
 <div class="container">
     <div class="row">
         <!--<div style="border:1px solid red;height: 200px;"></div>-->
-        {% if files %}
+        {% if results['files'] %}
+            {% set files = results['files'] %}
+
             <ol class="breadcrumb">
                 <li><a href="/browse">Sources</a></li>
                 {% for crumb in breadcrumbs %}
@@ -150,7 +152,7 @@
                         <span><img style="margin-top:-4px;margin-right:2px;" width="13px" height="13px" src="/static/icons/blue/128/Very_Basic/folder-128.png"/></span>
                         <span>{{files|length}} items</span>
                         <span class="meta-divider"></span>
-                        <span>{{files_size}}</span>
+                        <span>{{results['total_size_files']}}</span>
                     </div>
 
                     <div class="actions">
@@ -172,7 +174,7 @@
                             </div>
                             <div class="idontlikewritingcssandhtml">
                                 <div class="input-group">
-                                    <input class="form-control" type="text" id="fetch_wget" placeholder="" value="{{fetch['wget']}}">
+                                    <input class="form-control" type="text" id="fetch_wget" placeholder="" value="{{results['fetch']['wget']}}">
                                     <span class="input-group-btn">
                                         <button class="btn btn-default copy disabled" type="button">
                                             <span style="font-size:12px;">copy to clipboard</span>
@@ -186,7 +188,7 @@
                             </div>
                             <div class="idontlikewritingcssandhtml">
                                 <div class="input-group">
-                                    <input class="form-control" type="text" id="fetch_lftp" placeholder="" value="{{fetch['lftp']}}">
+                                    <input class="form-control" type="text" id="fetch_lftp" placeholder="" value="{{results['fetch']['lftp']}}">
                                     <span class="input-group-btn">
                                         <button class="btn btn-default copy disabled" type="button">
                                             <span style="font-size:12px;">copy to clipboard</span>
@@ -206,7 +208,7 @@
                             <th>Filename</th>
                             <th style="min-width: 50px;">Size</th>
                             <th>Perm</th>
-                            <th style="width: 136px;">Modified</th>
+                            <th style="width: 140px;">Modified</th>
                         </tr>
                         </thead>
                         <tbody data-link="row" class="rowlink">
@@ -229,11 +231,10 @@
                 </div>
             </div>
         {% if path != '/' %}
-            {% if load_time %}
-                <div class="alert alert-info">Page load: {{load_time}} sec</div>
+        <div class="alert alert-info">Page load: {{results['load_dbtime']}} sec {% if results['cached'] == 1 %}(cached){% elif results['cached'] == 2 %}(precached){% endif %}</div>
         {% endif %}
         <br>
-        {% endif %}
+
         {% else %}
             Does not exist or no files have been added yet.
         {% endif %}

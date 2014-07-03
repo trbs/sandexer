@@ -10,12 +10,13 @@ from datetime import datetime
 from PIL import Image
 from urllib import quote_plus, unquote_plus
 import os
-
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 from bin.bytes2human import bytes2human
 from bin.config import Config
 from bin.orm import Postgres, Source, SourceFile, or_
 from bin.dataobjects import DataObjectManipulation, FlashMessage
-from bin.utils import Debug, set_icon, sort_alpha_keygetter, gen_action_fetches, gen_navigation, gen_breadcrumps, verify_upload, var_parse
+from bin.utils import Debug, set_icon, sort_alpha_keygetter, gen_action_fetches, gen_navigation, gen_breadcrumps, verify_upload, var_parse, prepare_files_for_display
 from bin.api import Api
 import bin.forms as Forms
 from bin.cache import Cache
@@ -31,6 +32,7 @@ patch_psycopg()
 def enable_cors():
     response.headers['X-Pirate'] = 'Yarrr'
 
+Debug('Loading config', info=True)
 cfg = Config()
 cfg.reload()
 
@@ -43,14 +45,24 @@ if cfg.get('General', 'debug'):
     debug(True)
 
 # Authentication, Authorization and Accounting. Use users.json and roles.json in users/
+Debug('Loading AAA', info=True)
 aaa = Cork('users')
 
-# Init bottle app + database
+Debug('Loading bottle app', info=True)
 app = app()
+
+Debug('Loading database', info=True)
 database = Postgres(cfg, app)
+create_session = sessionmaker(bind=database.engine)
+
+Debug('Loading Api & Cache', info=True)
 app = SessionMiddleware(app, cfg.HttpSessionOptions())
 api = Api(cfg)
 cache = Cache()
+
+if cfg.get('Cache', 'precache'):
+    session = create_session()
+    cache._browse_precache(cfg, session, prepare_files_for_display)
 
 #view = functools.partial(jinja2_view, template_lookup=['templates'])
 
@@ -83,19 +95,6 @@ def browse():
     aaa.require(fail_redirect='/login')
 
     return redirect('/browse?sort=[size=desc]')
-
-@route('/test')
-def test(db):
-    files = db.query(SourceFile).filter(SourceFile.filename.like('%python%'), SourceFile.source_name=='aceton', SourceFile.is_directory==False).all()
-    import random
-    ran = str(random.randrange(3,39))
-
-    r = cache.browse_lookup('aceton', '%2Fmusic%2F')
-    if not r:
-        cache.browse_insert('aceton', '%2Fmusic%2F', files)
-    else:
-        e = 'e'
-    return ''
 
 @route('/browse')
 def browse(db):
@@ -174,7 +173,7 @@ def browse_dir(path, db):
 
     start_dbtime = datetime.now()
     source = db.query(Source).filter_by(name=source_name).first()
-    results = {}
+    results = {'files': [], 'cached': 0}
 
     if source:
         if not isdir:
@@ -186,44 +185,33 @@ def browse_dir(path, db):
                 # maybe update some download stats here
                 return redirect(url)
 
-    in_cache = cache.browse_lookup(source_name, filepath)
+    cached = cache.browse_lookup(source_name, filepath)
 
-    if not in_cache:
-        results['files'] = db.query(SourceFile).filter_by(source_name=source_name,
-            filepath=
-            quote_plus(filepath)
+    if not cached:
+        results['files'] = db.query(SourceFile).filter_by(
+            source_name=source_name,
+            filepath=quote_plus(filepath)
         ).all()
 
-        # set icons
-        results['files'] = set_icon(cfg, results['files'])
+        results = prepare_files_for_display(
+            cfg=cfg,
+            results=results,
+            source=source,
+            filepath=filepath
+        )
 
-        # sort alphabetically
-        results['files'] = sorted(results['files'], key=lambda k: sort_alpha_keygetter(k).filename)
-
-        # folders always on top would be nice too
-        results['files'] = sorted(results['files'], key=lambda k: sort_alpha_keygetter(k).is_directory, reverse=True)
-
-        total_size_files = 0
-        dom = DataObjectManipulation()
-        for file in results['files']:
-            total_size_files += file.filesize
-            file = dom.humanize(file, humansizes=True, humandates=True, humanfile=True, humanpath=True)
-
-        results['total_size_files'] = bytes2human(total_size_files)
         cache.browse_insert(source_name, filepath, results)
     else:
-        results = in_cache
+        results = cached['files']
+        results['cached'] = 1 if not cached['precache'] else 2
 
-    load_time = (datetime.now() - start_dbtime).total_seconds()
+    results['load_dbtime'] = (datetime.now() - start_dbtime).total_seconds()
 
     return jinja2_template('browse_directory.html',
-        load_time=load_time,
         title='Browse',
         path=filepath,
-        fetch=gen_action_fetches(source, filepath),
         path_quoted=quote_plus(filepath),
-        files_size=results['total_size_files'],
-        files=results['files'],
+        results=results,
         source=source,
         navigation=gen_navigation(admin),
         breadcrumbs=gen_breadcrumps(source_name+filepath, 'browse/')
@@ -243,7 +231,7 @@ def search(db):
             errors.append(FlashMessage('Search', 'String must contain 3 characters or more', mtype="warning"))
         else:
             max_results = 200
-            start = datetime.now()
+            start_dbtime = datetime.now()
 
             # build the query
             q = db.query(SourceFile)
@@ -303,41 +291,32 @@ def search(db):
 
             # fetch results
             search_query = quote_plus(vars['query']).lower()
-            q = q.filter(SourceFile.filename_low.like('%'+search_query+'%'))
-            results = q.all()
+            q = q.filter(
+                SourceFile.filename_low.like('%'+search_query+'%')
+            )
+            results = dict(files=q.all())
 
-            load_time = (datetime.now() - start).total_seconds()
+            results['load_dbtime'] = (datetime.now() - start_dbtime).total_seconds()
 
-            num_results = len(results)
-            results = results[:max_results]
+            num_results = len(results['files'])
+            results['files'] = results['files'][:max_results]
 
-            # humanize filesizes
-            dom = DataObjectManipulation()
-            for f in results:
-                f = dom.humanize(f, humansizes=True, humanpath=True)
-
-            # set icons
-            results = set_icon(cfg, results)
-
-            # sort alphabetically
-            results = sorted(results, key=lambda k: sort_alpha_keygetter(k).filename)
-
-            # folders always on top would be nice too
-            results = sorted(results, key=lambda k: sort_alpha_keygetter(k).is_directory, reverse=True)
+            prepare_files_for_display(cfg, results)
 
             db.rollback()
 
             sources_list = db.query(Source).all()
             sources_dict = {}
+
             for source in sources_list:
                 sources_dict[source.name] = source
 
             return jinja2_template('search_results.html',
-                files=results,
+                title='Search',
+                results=results,
+                num_results=num_results,
                 query=vars,
                 sources=sources_dict,
-                num_results=num_results,
-                load_time=load_time,
                 navigation=gen_navigation(admin)
             )
 
@@ -419,7 +398,7 @@ def sources(db):
     for source in sources:
         source = dom.humanize(source, humansizes=True)
 
-    #sources = sorted(sources, key=lambda k: k.name)
+    sources = sorted(sources, key=lambda k: k.name)
 
     return jinja2_template('sources.html',
         title='Admin',

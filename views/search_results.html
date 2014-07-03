@@ -61,7 +61,7 @@
 <div class="container">
     <div class="row">
         <div class="alert alert-info">
-            Got <b>{{num_results}}</b> results in <b>{{load_time}}</b> seconds. Showing <b>{{files|length}}</b>
+            Got <b>{{num_results}}</b> results in <b>{{results['load_dbtime']}}</b> seconds. Showing <b>{{results|length}}</b>
         </div>
 
         <div class="well">
@@ -78,12 +78,10 @@
                 </tr>
                 </thead>
                 <tbody data-link="row" class="rowlink">
-                {% for f in files %}
+                {% for f in results['files'] %}
                     {% set url = sources[f.source_name].crawl_url %}
                     {% set path = f.filepath %}
                     {% set path_clean = f.filepath_human[1:] %}
-                    {% set filesize = f.filesize %}
-                    {% set filesize_clean = f.filesize_human %}
 
                     <tr rel="popover" title="">
                         <td class="rowlink-skip">
@@ -94,10 +92,10 @@
                         </td>
                         <td>
                             <a class="hoi" title='' href="{{url}}{{path_clean}}/{{f.filename}}{% if f.is_directory %}/{% endif %}" target="_self">
-                                <b>{{f.filename}}</b>
+                                <b>{{f.filename_human}}</b>
                             </a>
                         </td>
-                        <td><b>{{filesize_clean}}</b></td>
+                        <td><b>{{f.filesize_human}}</b></td>
                         <td>
                             <img class="fileicon" src="/static/user_upload/icon_{{f.source_name}}.png"/>
                             {{f.source_name}}

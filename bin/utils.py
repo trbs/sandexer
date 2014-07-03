@@ -8,6 +8,7 @@ import string
 import random
 from bin.files import Icons
 from PIL import Image
+from bytes2human import bytes2human, human2bytes
 
 
 def bytesTo(bytes, to, bsize=1024):
@@ -180,3 +181,27 @@ def var_parse(query):
             parsed[key] = val
 
     return parsed
+
+def prepare_files_for_display(cfg, results, source=None, filepath=None):
+    from dataobjects import DataObjectManipulation
+
+    # set icons
+    results['files'] = set_icon(cfg, results['files'])
+
+    # sort alphabetically
+    results['files'] = sorted(results['files'], key=lambda k: sort_alpha_keygetter(k).filename)
+
+    # folders always on top would be nice too
+    results['files'] = sorted(results['files'], key=lambda k: sort_alpha_keygetter(k).is_directory, reverse=True)
+
+    total_size_files = 0
+    dom = DataObjectManipulation()
+    for file in results['files']:
+        total_size_files += file.filesize
+        file = dom.humanize(file, humansizes=True, humandates=True, humanfile=True, humanpath=True)
+
+    if source and filepath:
+        results['fetch'] = gen_action_fetches(source, filepath)
+
+    results['total_size_files'] = bytes2human(total_size_files)
+    return results
