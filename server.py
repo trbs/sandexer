@@ -154,8 +154,8 @@ def browse(db):
 @route('/browse/<path:path>')
 def browse_dir(path, db):
     #"""Only authenticated users can see this"""
-    #aaa.require(fail_redirect='/login')
-    #admin = request.environ.get('beaker.session')['username'] == 'admin'
+    aaa.require(fail_redirect='/login')
+    admin = request.environ.get('beaker.session')['username'] == 'admin'
 
     filename = ''
     isdir = False

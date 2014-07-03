@@ -5,10 +5,11 @@ import time
 class Cache():
     def __init__(self):
         # the amount in seconds at which a cached object is considered expired
-        self._cache_expires = 120
+        # if zero, it wont ever expire (unless the source is crawled again)
+        self._cache_expires = 0
 
         # the maximum amount of directories to cache. Not the amount of files.
-        self._cache_browse_maxsize = 2
+        self._cache_browse_maxsize = 20
 
         # dont touch this, its just to keep track
         self._cache_browse_size = 0
@@ -30,7 +31,7 @@ class Cache():
 
         cached = self._cache_browse[source][path]
 
-        if self._now() - cached['date'] > self._cache_expires:
+        if 0 < self._cache_expires < self._now() - cached['date']:
             del self._cache_browse[source][path]
             self._cache_browse_size -= 1
             return False
@@ -59,3 +60,6 @@ class Cache():
 
     def _now(self):
         return int(time.mktime(datetime.now().timetuple()))
+
+    def browse_clear(self):
+        self._cache_browse = {}
