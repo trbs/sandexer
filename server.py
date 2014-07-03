@@ -18,6 +18,7 @@ from bin.dataobjects import DataObjectManipulation, FlashMessage
 from bin.utils import Debug, set_icon, sort_alpha_keygetter, gen_action_fetches, gen_navigation, gen_breadcrumps, verify_upload, var_parse
 from bin.api import Api
 import bin.forms as Forms
+from bin.cache import Cache
 
 # monkey patch all the things
 from gevent import monkey
@@ -41,7 +42,6 @@ if cfg.get('General', 'debug'):
     log.addHandler(log_handler)
     debug(True)
 
-
 # Authentication, Authorization and Accounting. Use users.json and roles.json in users/
 aaa = Cork('users')
 
@@ -50,6 +50,7 @@ app = app()
 database = Postgres(cfg, app)
 app = SessionMiddleware(app, cfg.HttpSessionOptions())
 api = Api(cfg)
+cache = Cache()
 
 #view = functools.partial(jinja2_view, template_lookup=['templates'])
 
@@ -82,6 +83,19 @@ def browse():
     aaa.require(fail_redirect='/login')
 
     return redirect('/browse?sort=[size=desc]')
+
+@route('/test')
+def test(db):
+    files = db.query(SourceFile).filter(SourceFile.filename.like('%python%'), SourceFile.source_name=='aceton', SourceFile.is_directory==False).all()
+    import random
+    ran = str(random.randrange(3,39))
+
+    r = cache.browse_lookup('aceton', '%2Fmusic%2F')
+    if not r:
+        cache.browse_insert('aceton', '%2Fmusic%2F', files)
+    else:
+        e = 'e'
+    return ''
 
 @route('/browse')
 def browse(db):
@@ -140,8 +154,8 @@ def browse(db):
 @route('/browse/<path:path>')
 def browse_dir(path, db):
     #"""Only authenticated users can see this"""
-    aaa.require(fail_redirect='/login')
-    admin = request.environ.get('beaker.session')['username'] == 'admin'
+    #aaa.require(fail_redirect='/login')
+    #admin = request.environ.get('beaker.session')['username'] == 'admin'
 
     filename = ''
     isdir = False
@@ -160,7 +174,7 @@ def browse_dir(path, db):
 
     start_dbtime = datetime.now()
     source = db.query(Source).filter_by(name=source_name).first()
-    files = []
+    results = {}
 
     if source:
         if not isdir:
@@ -172,27 +186,34 @@ def browse_dir(path, db):
                 # maybe update some download stats here
                 return redirect(url)
 
-        files = db.query(SourceFile).filter_by(source_name=source_name,
+    in_cache = cache.browse_lookup(source_name, filepath)
+
+    if not in_cache:
+        results['files'] = db.query(SourceFile).filter_by(source_name=source_name,
             filepath=
             quote_plus(filepath)
         ).all()
 
-        files = set_icon(cfg, files)
-        source = source
+        # set icons
+        results['files'] = set_icon(cfg, results['files'])
 
-    # sort alphabetically
-    files = sorted(files, key=lambda k: sort_alpha_keygetter(k).filename)
+        # sort alphabetically
+        results['files'] = sorted(results['files'], key=lambda k: sort_alpha_keygetter(k).filename)
 
-    # folders always on top would be nice too
-    files = sorted(files, key=lambda k: sort_alpha_keygetter(k).is_directory, reverse=True)
+        # folders always on top would be nice too
+        results['files'] = sorted(results['files'], key=lambda k: sort_alpha_keygetter(k).is_directory, reverse=True)
 
-    files_size = 0
-    dom = DataObjectManipulation()
-    for file in files:
-        files_size += file.filesize
-        file = dom.humanize(file, humansizes=True, humandates=True, humanfile=True, humanpath=True)
+        total_size_files = 0
+        dom = DataObjectManipulation()
+        for file in results['files']:
+            total_size_files += file.filesize
+            file = dom.humanize(file, humansizes=True, humandates=True, humanfile=True, humanpath=True)
 
-    files_size = bytes2human(files_size)
+        results['total_size_files'] = bytes2human(total_size_files)
+        cache.browse_insert(source_name, filepath, results)
+    else:
+        results = in_cache
+
     load_time = (datetime.now() - start_dbtime).total_seconds()
 
     return jinja2_template('browse_directory.html',
@@ -201,8 +222,8 @@ def browse_dir(path, db):
         path=filepath,
         fetch=gen_action_fetches(source, filepath),
         path_quoted=quote_plus(filepath),
-        files_size=files_size,
-        files=files,
+        files_size=results['total_size_files'],
+        files=results['files'],
         source=source,
         navigation=gen_navigation(admin),
         breadcrumbs=gen_breadcrumps(source_name+filepath, 'browse/')
