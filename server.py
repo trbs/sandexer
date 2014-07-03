@@ -386,7 +386,6 @@ def admin():
         navigation=gen_navigation(admin=True)
     )
 
-
 @route('/admin/sources')
 def sources(db):
     """Only admin users can see this"""
