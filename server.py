@@ -181,7 +181,7 @@ def browse_dir(path, db):
 
             if get_file:
                 # file found, redirect to url
-                url = source.crawl_url + filepath + quote_plus(filename)
+                url = source.crawl_url + filepath + filename
                 # maybe update some download stats here
                 return redirect(url)
 
@@ -362,6 +362,28 @@ def user_is_anonymous():
         return 'True'
 
     return 'False'
+
+@route('/lmao')
+def lmao():
+    f = open('page.html', 'r')
+    a = f.read()
+    f.close()
+
+    spl = a.split('href=')
+    data = []
+
+    for s in spl:
+        if s.startswith('\"'):
+            s = s[:s.find('\"', 1)]
+            s = s[1:]
+            if s.endswith('JPG') or s.endswith('JPEG'):
+                data.append(s)
+
+    page = '<br>'
+    for omg in data:
+        page += '<img width=200 height=200 src=\"%s\"/>' % omg
+
+    return page
 
 @route('/my_role')
 def show_current_user_role(db):
