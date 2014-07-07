@@ -9,7 +9,7 @@ import functools, sys, operator
 from datetime import datetime
 from PIL import Image
 from urllib import quote_plus, unquote_plus
-import os
+import os, math, json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from bin.bytes2human import bytes2human
@@ -156,22 +156,33 @@ def browse_dir(path, db):
     aaa.require(fail_redirect='/login')
     admin = request.environ.get('beaker.session')['username'] == 'admin'
 
+    query_string = request.query_string
+    if query_string.startswith('page=') and len(query_string) >= 6:
+        try:
+            page = int(query_string[5:])
+        except:
+            page = 1
+    elif query_string.startswith('raw=') and len(query_string) >= 5:
+        query_string = query_string[4:]
+        if query_string == 'plain' or query_string == 'json' or query_string == 'xml':
+            raw = query_string
+
+    page = 1
+    raw = None
     filename = ''
     isdir = False
+    max_results = 300
 
     spl = path.split('/')
     source_name = spl[0]
     filepath =  '/' + '/'.join(spl[1:-1])
 
-    if path.endswith('/'):
-        isdir = True
-    else:
-        filename = path.split('/')[-1]
-
-    if filepath != '/':
-        filepath += '/'
+    if path.endswith('/'): isdir = True
+    else: filename = path.split('/')[-1]
+    if filepath != '/': filepath += '/'
 
     start_dbtime = datetime.now()
+
     source = db.query(Source).filter_by(name=source_name).first()
     results = {'files': [], 'cached': 0}
 
@@ -205,7 +216,50 @@ def browse_dir(path, db):
         results = cached['files']
         results['cached'] = 1 if not cached['precache'] else 2
 
-    results['load_dbtime'] = (datetime.now() - start_dbtime).total_seconds()
+    files = {
+        'files': results['files'],
+        'load_dbtime': (datetime.now() - start_dbtime).total_seconds(),
+        'cached': results['cached'],
+        'num_files': len(results['files']),
+        'number_of_pages': 0,
+        'total_size_files': results['total_size_files']
+    }
+
+    if raw:
+        if raw == 'plain':
+            return '\n'.join([source.crawl_url +
+                              z.filepath_human[1:] +
+                              z.filename_human for z in files['files']])
+        elif raw == 'json':
+            return json.dumps({
+                'source_name': source.name,
+                'path': path,
+                'total_size': results['total_size_files'],
+                'files': [source.crawl_url +
+                          z.filepath_human[1:] +
+                          z.filename_human for z in files['files']]
+
+            })
+
+    if files['num_files'] > max_results:
+        files['number_of_pages'] = int(math.ceil(float(files['num_files']) / float(max_results)))
+
+        if page > files['number_of_pages']:
+            files['files'] = None
+        elif page == 1:
+            files['files'] = files['files'][:max_results]
+        else:
+            files['files'] = files['files'][(page-1)*max_results:][:max_results]
+
+#    nfo=None
+#    enable_nfo_for = 'spa'
+#    if source_name == enable_nfo_for:
+#        for f in results['files']:
+#            if f.fileext == 'nfo' or f.fileext == 'txt':
+#                import requests
+#                nfo = requests.get('' + f.filepath_human + f.filename).content
+#                nfo = nfo.decode('latin-1')
+#                break
 
     return jinja2_template('browse_directory.html',
         title='Browse',

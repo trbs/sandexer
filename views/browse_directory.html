@@ -49,9 +49,18 @@
         padding-left:10px;
         padding-top:12px;
         padding-right:0px;
-        padding-bottom:12px;
         font-family: sans-serif;
         font-size: 14px;
+        float:left;
+    }
+    div.pages_header{
+        padding-left:10px;
+        padding-right:0px;
+        padding-bottom:6px;
+        padding-top:6px;
+        font-family: sans-serif;
+        font-size: 14px;
+        width:60%;
         float:left;
     }
     div.action_more{
@@ -92,6 +101,12 @@
         border-bottom: 1px solid #ddd;
         border-top:none;
     }
+    pre{
+        border: 1px solid #e3e3e3;
+        border-radius: 4px;
+        -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+        box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+    }
     input.cmd{
         resize: none;
         border:1px solid #e3e3e3;
@@ -108,6 +123,28 @@
     input.form-control{
         float:left;
     }
+    div.pages{
+        cursor:pointer;
+        text-align:center;
+        padding-right:5px;
+        padding-left:5px;
+        padding-top: 2px;
+        float:left;
+        height:26px;
+        color:#428bca;
+    }
+    div.active{
+        color:black;
+        cursor: pointer;
+    }
+    span.pages_span{
+        float:left;
+        padding-top:2px;
+        padding-right: 6px;
+    }
+    span.active{
+        color:black;
+    }
 </style>
 
 <div style="height:20px;"></div>
@@ -115,8 +152,8 @@
 <div class="container">
     <div class="row">
         <!--<div style="border:1px solid red;height: 200px;"></div>-->
-        {% if results['files'] %}
-            {% set files = results['files'] %}
+        {% if files %}
+
 
             <ol class="breadcrumb">
                 <li><a href="/browse">Sources</a></li>
@@ -150,11 +187,14 @@
                 <div class="info_files">
                     <div class="files_header">
                         <span><img style="margin-top:-4px;margin-right:2px;" width="13px" height="13px" src="/static/icons/blue/128/Very_Basic/folder-128.png"/></span>
-                        <span>{{files|length}} items</span>
+                        <span>{{num_files}} items
+                        {% if number_of_pages != 0 %}
+                             (showing {{files|length}})
+                        {% endif %}
+                        </span>
                         <span class="meta-divider"></span>
                         <span>{{results['total_size_files']}}</span>
                     </div>
-
                     <div class="actions">
                         <div class="btn-group btn-group-sm">
                             <button id="btn_action_fetch" type="button" class="btn btn-default"><b>Fetch</b></button>
@@ -163,7 +203,26 @@
                         </div>
                         <button style="margin-left:10px;color:#900;" type="button" class="btn btn-default btn-sm"><b>Delete</b></button>
                     </div>
+
+                    {% if number_of_pages != 0 %}
+
+                    <div class="pages_header" style="">
+                        <div style="float:left;">
+                            <span class="pages_span"><img style="margin-top:-4px;margin-right:2px;" width="13px" height="13px" src="/static/icons/blue/128/Editing/overview_pages_4-128.png"/> Page </span>
+
+
+                        {% for i in range(0,number_of_pages) %}
+                            <div class="pages {% if i + 1 == current_page %}active{% endif %}">{{i+1}}</div>
+                        {% endfor %}
+                        </div>
+                    </div>
+
+                    {% else %}
+                        <div style="height:9px;width:100%;float:left;"></div>
+                    {% endif %}
                 </div>
+
+
 
                 <div class="action_more">
                     <div id="action_fetch_container" class="action_container">
@@ -230,6 +289,16 @@
                     </table>
                 </div>
             </div>
+        {% if nfo %}
+        <div class="well" style="padding:0px;">
+            <center>
+                <pre>
+                    {{nfo}}
+                </pre>
+            </center>
+        </div>
+        {% endif %}
+
         {% if path != '/' %}
         <div class="alert alert-info">Page load: {{results['load_dbtime']}} sec {% if results['cached'] == 1 %}(cached){% elif results['cached'] == 2 %}(precached){% endif %}</div>
         {% endif %}
@@ -263,6 +332,21 @@
             });
 
             var display_action_fetch = false;
+
+            $('.pages').hover(function(){
+                if($(this).attr('class') != 'pages active'){
+                    $(this).css('text-decoration', 'underline');
+                }
+            }, function(){
+                $(this).css('text-decoration', 'none');
+            });
+
+            $('.pages').click(function(){
+                if($(this).attr('class') != 'pages active'){
+                    var page = $(this).html();
+                    goto_uri('?page='+page);
+                }
+            });
 
             function actions_closeall(){
                 $('#action_fetch_container').hide();
