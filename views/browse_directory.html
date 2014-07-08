@@ -75,6 +75,8 @@
         padding-bottom:12px;
         font-family: sans-serif;
         font-size: 14px;
+        border-bottom: 1px solid;
+        border-bottom-color: rgb(227, 227, 227);
     }
     div.info_files{
         border-bottom: 1px solid #e3e3e3;
@@ -134,7 +136,7 @@
         color:#428bca;
     }
     div.active{
-        color:black;
+        color:#555;
         cursor: pointer;
     }
     span.pages_span{
@@ -152,7 +154,7 @@
 <div class="container">
     <div class="row">
         <!--<div style="border:1px solid red;height: 200px;"></div>-->
-        {% if files %}
+        {% if files['files'] %}
 
 
             <ol class="breadcrumb">
@@ -187,13 +189,13 @@
                 <div class="info_files">
                     <div class="files_header">
                         <span><img style="margin-top:-4px;margin-right:2px;" width="13px" height="13px" src="/static/icons/blue/128/Very_Basic/folder-128.png"/></span>
-                        <span>{{num_files}} items
-                        {% if number_of_pages != 0 %}
-                             (showing {{files|length}})
+                        <span>{{files['num_files']}} items
+                        {% if files['number_of_pages'] != 0 %}
+                             (showing {{files['files']|length}})
                         {% endif %}
                         </span>
                         <span class="meta-divider"></span>
-                        <span>{{results['total_size_files']}}</span>
+                        <span>{{files['total_size_files']}}</span>
                     </div>
                     <div class="actions">
                         <div class="btn-group btn-group-sm">
@@ -204,27 +206,31 @@
                         <button style="margin-left:10px;color:#900;" type="button" class="btn btn-default btn-sm"><b>Delete</b></button>
                     </div>
 
-                    {% if number_of_pages != 0 %}
+                    {% if files['number_of_pages'] != 0 %}
 
-                    <div class="pages_header" style="">
-                        <div style="float:left;">
-                            <span class="pages_span"><img style="margin-top:-4px;margin-right:2px;" width="13px" height="13px" src="/static/icons/blue/128/Editing/overview_pages_4-128.png"/> Page </span>
+                        <div class="pages_header" style="">
+                            <div style="float:left;">
+                                <span class="pages_span"><img style="margin-top:-4px;margin-right:2px;" width="13px" height="13px" src="/static/icons/blue/128/Editing/overview_pages_4-128.png"/> Page </span>
 
 
-                        {% for i in range(0,number_of_pages) %}
-                            <div class="pages {% if i + 1 == current_page %}active{% endif %}">{{i+1}}</div>
-                        {% endfor %}
+                            {% for i in range(0,files['number_of_pages']) %}
+                                <div class="pages {% if i + 1 == files['page'] %}active{% endif %}">{{i+1}}</div>
+                            {% endfor %}
+                            </div>
                         </div>
-                    </div>
 
                     {% else %}
                         <div style="height:9px;width:100%;float:left;"></div>
                     {% endif %}
                 </div>
 
-
-
                 <div class="action_more">
+                    <div id="action_raw_container" class="action_container">
+                        <div style="overflow:hidden;margin-left:20px;">
+                            <a href="?raw=plain">plain </a> <a href="?raw=json">json </a> <a href="?raw=xml">xml </a>
+                        </div>
+                    </div>
+
                     <div id="action_fetch_container" class="action_container">
                         <h4>linux/osx</h4>
                         <div style="overflow:hidden;margin-left:20px;margin-top:4px;">
@@ -233,7 +239,7 @@
                             </div>
                             <div class="idontlikewritingcssandhtml">
                                 <div class="input-group">
-                                    <input class="form-control" type="text" id="fetch_wget" placeholder="" value="{{results['fetch']['wget']}}">
+                                    <input class="form-control" type="text" id="fetch_wget" placeholder="" value="{{files['fetch']['wget']}}">
                                     <span class="input-group-btn">
                                         <button class="btn btn-default copy disabled" type="button">
                                             <span style="font-size:12px;">copy to clipboard</span>
@@ -247,7 +253,7 @@
                             </div>
                             <div class="idontlikewritingcssandhtml">
                                 <div class="input-group">
-                                    <input class="form-control" type="text" id="fetch_lftp" placeholder="" value="{{results['fetch']['lftp']}}">
+                                    <input class="form-control" type="text" id="fetch_lftp" placeholder="" value="{{files['fetch']['lftp']}}">
                                     <span class="input-group-btn">
                                         <button class="btn btn-default copy disabled" type="button">
                                             <span style="font-size:12px;">copy to clipboard</span>
@@ -271,7 +277,7 @@
                         </tr>
                         </thead>
                         <tbody data-link="row" class="rowlink">
-                            {% for f in files %}
+                            {% for f in files['files'] %}
                                 <tr rel="popover" title="">
                                     <td class="rowlink-skip">
                                         <div id="{{f.filename}}" class="filethumbnail">
@@ -300,7 +306,7 @@
         {% endif %}
 
         {% if path != '/' %}
-        <div class="alert alert-info">Page load: {{results['load_dbtime']}} sec {% if results['cached'] == 1 %}(cached){% elif results['cached'] == 2 %}(precached){% endif %}</div>
+        <div class="alert alert-info">Page load: {{files['load_dbtime']}} sec {% if files['cached'] == 1 %}(cached){% elif files['cached'] == 2 %}(precached){% endif %}</div>
         {% endif %}
         <br>
 
@@ -350,14 +356,38 @@
 
             function actions_closeall(){
                 $('#action_fetch_container').hide();
+                $('#action_raw_container').hide();
                 $('.action_more').css('border-bottom', '0px solid white');
                 $('#btn_action_fetch').attr('class', 'btn btn-default');
+                $('#btn_action_raw').attr('class', 'btn btn-default');
 
                 display_action_fetch = false;
+                display_action_raw = false;
+            }
+
+            display_action_raw = false;
+
+            function toggle_action_raw(){
+                if(!display_action_raw){
+                    actions_closeall();
+
+                    display_action_raw = true;
+
+                    $('.action_more').css('display', 'inline');
+                    $('.action_more').css('border-bottom', '1px solid #e3e3e3');
+
+                    $('#action_raw_container').show();
+                    $('#btn_action_raw').attr('class', 'btn btn-default btn-primary');
+                }
+                else{
+                    actions_closeall();
+                }
             }
 
             function toggle_action_fetch(){
                 if(!display_action_fetch){
+                    actions_closeall();
+
                     display_action_fetch = true;
                     $('.action_more').css('display', 'inline');
                     $('.action_more').css('border-bottom', '1px solid #e3e3e3');
@@ -366,13 +396,19 @@
                     $('#btn_action_fetch').attr('class', 'btn btn-default btn-primary');
                 }
                 else{
-                    actions_closeall()
+                    actions_closeall();
                 }
             }
 
             $('#btn_action_fetch').click(function(){
-               toggle_action_fetch()
+               toggle_action_fetch();
             });
+            $('#btn_action_raw').click(function(){
+                toggle_action_raw();
+            });
+
+            $('#action_fetch_container').hide();
+            $('#action_raw_container').hide();
         });
     });
 </script>

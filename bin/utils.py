@@ -79,7 +79,7 @@ def gen_action_fetches(source, path):
     wget = 'wget %s-r -nH --no-parent \'%s\'' % (wget_extras, url + path)
 
     if not isinstance(lftp_extras, Debug):
-        lftp = 'lftp %s-e \'mirror\' %s' % (lftp_extras, url+path)
+        lftp = 'lftp %s-e \'mirror\' \'%s\'' % (lftp_extras, url+path)
     else:
         lftp = lftp_extras.message
 

@@ -156,6 +156,12 @@ def browse_dir(path, db):
     aaa.require(fail_redirect='/login')
     admin = request.environ.get('beaker.session')['username'] == 'admin'
 
+    page = 1
+    raw = None
+    filename = ''
+    isdir = False
+    max_results = 300
+
     query_string = request.query_string
     if query_string.startswith('page=') and len(query_string) >= 6:
         try:
@@ -166,12 +172,6 @@ def browse_dir(path, db):
         query_string = query_string[4:]
         if query_string == 'plain' or query_string == 'json' or query_string == 'xml':
             raw = query_string
-
-    page = 1
-    raw = None
-    filename = ''
-    isdir = False
-    max_results = 300
 
     spl = path.split('/')
     source_name = spl[0]
@@ -222,7 +222,9 @@ def browse_dir(path, db):
         'cached': results['cached'],
         'num_files': len(results['files']),
         'number_of_pages': 0,
-        'total_size_files': results['total_size_files']
+        'total_size_files': results['total_size_files'],
+        'fetch': results['fetch'],
+        'page': page
     }
 
     if raw:
@@ -257,7 +259,7 @@ def browse_dir(path, db):
 #        for f in results['files']:
 #            if f.fileext == 'nfo' or f.fileext == 'txt':
 #                import requests
-#                nfo = requests.get('' + f.filepath_human + f.filename).content
+#                nfo = requests.get(source.crawl_url + f.filepath_human[1:] + f.filename).content
 #                nfo = nfo.decode('latin-1')
 #                break
 
@@ -265,7 +267,7 @@ def browse_dir(path, db):
         title='Browse',
         path=filepath,
         path_quoted=quote_plus(filepath),
-        results=results,
+        files=files,
         source=source,
         navigation=gen_navigation(admin),
         breadcrumbs=gen_breadcrumps(source_name+filepath, 'browse/')
